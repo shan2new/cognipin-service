@@ -4,6 +4,8 @@ export class Init1710000000000 implements MigrationInterface {
   name = 'Init1710000000000'
 
   public async up(queryRunner: QueryRunner): Promise<void> {
+    // Ensure pgcrypto extension for gen_random_uuid used in later tables
+    await queryRunner.query('CREATE EXTENSION IF NOT EXISTS pgcrypto')
     await queryRunner.query(`CREATE TYPE difficulty_enum AS ENUM ('Easy','Medium','Hard')`)
     await queryRunner.query(
       `CREATE TABLE IF NOT EXISTS problems (
