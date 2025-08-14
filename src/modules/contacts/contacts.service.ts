@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
-import { Repository } from 'typeorm'
+import { In, Repository } from 'typeorm'
 import { Application } from '../../schema/application.entity'
 import { ApplicationContact } from '../../schema/application-contact.entity'
 import { Contact } from '../../schema/contact.entity'
@@ -18,7 +18,7 @@ export class ContactsService {
   async list(appId: string) {
     const acs = await this.appContactRepo.find({ where: { application_id: appId } })
     const ids = acs.map((x) => x.contact_id)
-    const contacts = ids.length ? await this.contactRepo.findByIds(ids) : []
+    const contacts = ids.length ? await this.contactRepo.findBy({ id: In(ids) }) : []
     const channels = ids.length ? await this.channelRepo.find({ where: { contact_id: In(ids) } as any }) : []
     return acs.map((ac) => ({
       application_id: ac.application_id,

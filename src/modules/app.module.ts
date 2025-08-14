@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common'
-import { TypeOrmModule } from '@nestjs/typeorm'
+import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm'
 import { ConfigModule, ConfigService } from '@nestjs/config'
-import { DataSourceOptions } from 'typeorm'
 import { ProblemsModule } from './problems/problems.module'
 import { ProgressModule } from './progress/progress.module'
 import { ClerkAuthModule } from './auth/clerk.module'
@@ -24,13 +23,11 @@ import { AppController } from '../app.controller'
     ConfigModule.forRoot({ isGlobal: true }),
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
-      useFactory: (config: ConfigService) => {
-        const databaseUrl = config.get<string>('DATABASE_URL')
+      useFactory: (): TypeOrmModuleOptions => {
         return {
-          ...(ormConfig as DataSourceOptions),
-          url: databaseUrl,
+          ...(ormConfig as any),
           autoLoadEntities: true,
-        } as DataSourceOptions
+        }
       },
     }),
     ClerkAuthModule,
