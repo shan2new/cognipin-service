@@ -31,18 +31,20 @@ function cleanSegment(segment: string): string {
 
 function parseCompanyNameFromTitle(rawTitle: string): string {
   const title = rawTitle.trim()
-  // Case 1: some text | Company → take the last segment
-  if (title.includes('|')) {
-    const parts = title.split('|').map((p) => cleanSegment(p))
-    const last = parts[parts.length - 1]
-    if (last) return last
+  // Split by any of the separators: | or dashes (-, –, —), choose the shortest segment
+  const parts = title
+    .split(/\s*(?:\||[\-–—])\s*/)
+    .map((p) => cleanSegment(p))
+    .filter(Boolean)
+
+  if (parts.length > 1) {
+    let shortest = parts[0]
+    for (let i = 1; i < parts.length; i++) {
+      if (parts[i].length < shortest.length) shortest = parts[i]
+    }
+    return shortest
   }
-  // Case 2: Company - some text → take the first segment (handle -, –, —)
-  const dashMatch = title.split(/\s*[\-–—]\s*/)
-  if (dashMatch.length > 1) {
-    const first = cleanSegment(dashMatch[0])
-    if (first) return first
-  }
+
   // Fallback: direct title
   return cleanSegment(title)
 }
@@ -75,6 +77,19 @@ function sanitizeUrl(input: string, base: URL): string | null {
 }
 
 function preferLogoUrl(headHtml: string, base: URL): string | null {
+  // Prefer: link[rel*="icon"]
+  const linkTags = headHtml.match(/<link[^>]*>/gi) || []
+  for (const tag of linkTags) {
+    if (/rel=["'][^"']*icon[^"']*["']/i.test(tag)) {
+      const hrefMatch = tag.match(/href=["']([^"']+)["']/i)
+      if (hrefMatch && hrefMatch[1]) {
+        const cleaned = sanitizeUrl(hrefMatch[1], base)
+        if (cleaned) return cleaned
+      }
+    }
+  }
+
+  // Fallback to og:image if provided
   const ogImage = headHtml.match(/<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)/i)
   if (ogImage && ogImage[1]) {
     const cleaned = sanitizeUrl(ogImage[1], base)

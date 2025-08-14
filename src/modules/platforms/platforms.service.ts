@@ -20,7 +20,8 @@ export class PlatformsService {
     } else if (name && platform.name !== name) {
       platform.name = name
     }
-    if (logoBase64 && !platform.logo_blob_base64) {
+    // Always refresh logo when a new one is available
+    if (logoBase64 && logoBase64 !== platform.logo_blob_base64) {
       platform.logo_blob_base64 = logoBase64
     }
     return this.repo.save(platform)

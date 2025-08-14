@@ -25,7 +25,8 @@ export class CompaniesService {
     } else if (name && !company.name) {
       company.name = name
     }
-    if (logoBase64 && !company.logo_blob_base64) {
+    // Always refresh logo when a new one is available (keeps it lazily fresh)
+    if (logoBase64 && logoBase64 !== company.logo_blob_base64) {
       company.logo_blob_base64 = logoBase64
     }
     return this.repo.save(company)

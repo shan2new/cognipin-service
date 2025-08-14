@@ -38,13 +38,15 @@ export class ApplicationsService {
       return c
     }
     if (!companyInput.website_url) throw new BadRequestException('company.website_url or company_id required')
+    // Fetch metadata first so we can query by canonicalHost and keep logo/name fresh
     const meta = await fetchMetadata(companyInput.website_url)
     let c = await this.companyRepo.findOne({ where: { website_url: meta.canonicalHost } })
     if (!c) {
       c = this.companyRepo.create({ website_url: meta.canonicalHost, name: meta.name || meta.canonicalHost, logo_blob_base64: meta.logoBase64 })
     } else {
       if (meta.name && !c.name) c.name = meta.name
-      if (meta.logoBase64 && !c.logo_blob_base64) c.logo_blob_base64 = meta.logoBase64
+      // Always refresh logo when a new one is available to keep it lazily fresh
+      if (meta.logoBase64 && meta.logoBase64 !== c.logo_blob_base64) c.logo_blob_base64 = meta.logoBase64
     }
     return this.companyRepo.save(c)
   }
