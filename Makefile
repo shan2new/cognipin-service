@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 
-.PHONY: dev build start migration-generate migration-run migration-revert seed
+.PHONY: dev build start migration-generate migration-run migration-revert seed fetch-companies
 
 dev:
 	./node_modules/.bin/ts-node-dev --respawn --transpile-only src/main.ts
@@ -22,5 +22,8 @@ migration-revert:
 
 seed:
 	npx ts-node src/seed.ts
+
+fetch-companies:
+	npx ts-node src/scripts/fetch-companies.ts --query "$(query)"
 
 

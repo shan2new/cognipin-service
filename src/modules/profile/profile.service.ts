@@ -21,10 +21,11 @@ export class ProfileService {
     return (await this.repo.findOne({ where: { user_id: userId } })) as UserProfile
   }
 
-  async update(userId: string, body: { notice_period_days?: number | null; earliest_join_date?: string | null }) {
+  async update(userId: string, body: { notice_period_days?: number | null; earliest_join_date?: string | null; theme?: 'light' | 'dark' | null }) {
     const p = await this.get(userId)
     if (body.notice_period_days !== undefined) p.notice_period_days = body.notice_period_days as any
     if (body.earliest_join_date !== undefined) p.earliest_join_date = body.earliest_join_date as any
+    if (body.theme !== undefined) p.theme = body.theme as any
     return this.repo.save(p)
   }
 }

@@ -187,6 +187,7 @@ export class JobhuntInit1715000000000 implements MigrationInterface {
         user_id TEXT NOT NULL UNIQUE,
         notice_period_days INT NULL,
         earliest_join_date DATE NULL,
+        theme TEXT NULL,
         updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
       )
     `)

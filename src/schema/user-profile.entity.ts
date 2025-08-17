@@ -14,6 +14,9 @@ export class UserProfile {
   @Column('date', { nullable: true })
   earliest_join_date!: string | null
 
+  @Column('text', { nullable: true })
+  theme!: 'light' | 'dark' | null
+
   @UpdateDateColumn({ type: 'timestamptz' })
   updated_at!: Date
 }

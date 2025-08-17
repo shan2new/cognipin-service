@@ -24,7 +24,32 @@ export class ApplicationsService {
     const qb = this.appRepo.createQueryBuilder('a')
     qb.where('a.user_id = :userId', { userId })
     qb.leftJoinAndSelect('a.company', 'c')
-    // Filters to be expanded later; ensure ordering by last activity desc default
+    qb.leftJoinAndSelect('a.platform', 'p')
+    // Basic filters (expand as needed)
+    if (q.platform_id) {
+      qb.andWhere('a.platform_id = :platform_id', { platform_id: q.platform_id })
+    }
+    if (q.stage) {
+      qb.andWhere('a.stage = :stage', { stage: q.stage })
+    }
+    if (q.milestone) {
+      qb.andWhere('a.milestone = :milestone', { milestone: q.milestone })
+    }
+    if (q.source) {
+      qb.andWhere('a.source = :source', { source: q.source })
+    }
+    if (q.status) {
+      qb.andWhere('a.status = :status', { status: q.status })
+    }
+    if (q.date_from) {
+      const df = new Date(q.date_from)
+      if (!isNaN(df.getTime())) qb.andWhere('a.last_activity_at >= :date_from', { date_from: df })
+    }
+    if (q.date_to) {
+      const dt = new Date(q.date_to)
+      if (!isNaN(dt.getTime())) qb.andWhere('a.last_activity_at <= :date_to', { date_to: dt })
+    }
+    // Ensure ordering by last activity desc default
     qb.orderBy('a.last_activity_at', 'DESC')
     const apps = await qb.getMany()
     // Minimal derive placeholder; return as-is including selected relations
@@ -56,7 +81,7 @@ export class ApplicationsService {
     body: {
       company: { website_url?: string; company_id?: string }
       role: string
-      job_url: string
+      job_url?: string | null
       platform_id?: string | null
       source: string
       compensation?: { fixed_min_lpa?: number; fixed_max_lpa?: number; var_min_lpa?: number; var_max_lpa?: number; note?: string }
@@ -78,7 +103,7 @@ export class ApplicationsService {
       user_id: userId,
       company_id: company.id,
       role: body.role,
-      job_url: body.job_url,
+      job_url: body.job_url ?? null,
       platform_id: body.platform_id ?? null,
       source: body.source as any,
       stage,

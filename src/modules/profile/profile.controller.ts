@@ -16,7 +16,7 @@ export class ProfileController {
   @Patch()
   async update(
     @CurrentUser() user: RequestUser,
-    @Body() body: { notice_period_days?: number | null; earliest_join_date?: string | null },
+    @Body() body: { notice_period_days?: number | null; earliest_join_date?: string | null; theme?: 'light' | 'dark' | null },
   ) {
     return this.svc.update(user.userId, body)
   }

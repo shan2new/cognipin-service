@@ -55,8 +55,8 @@ export class Application {
   @Column({ type: 'text' })
   role!: string
 
-  @Column({ type: 'text' })
-  job_url!: string
+  @Column({ type: 'text', nullable: true })
+  job_url!: string | null
 
   @Column({ type: 'uuid', nullable: true })
   platform_id!: string | null
