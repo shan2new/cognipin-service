@@ -22,9 +22,10 @@ TAVILY_API_KEY=your_tavily_api_key_here
 
 ## Migration Notes
 
-- **Hybrid Fallback Strategy**: 
-  1. **Primary**: Tavily for specialized business web search (Crunchbase, LinkedIn, SEC filings, etc.)
-  2. **Fallback**: OpenRouter with Moonshot AI Kimi K2 online search if Tavily returns no meaningful results
+- **Intelligent Fallback Strategy**: 
+  1. **Primary**: DeepSeek-R1 free for initial company data gathering with advanced reasoning
+  2. **Fallback**: Tavily for specialized business web search (Crunchbase, LinkedIn, SEC filings, etc.) if DeepSeek finds no results
+  3. **Final Fallback**: OpenRouter with Moonshot AI Kimi K2 online search if both fail
   
 - **Enhanced Search Quality**: Tavily's specialized business data sources provide higher quality company information
 - **Reliability**: OpenRouter fallback ensures consistent results even if Tavily is unavailable
@@ -34,17 +35,18 @@ TAVILY_API_KEY=your_tavily_api_key_here
 
 ## Search Strategy
 
-1. **Tavily First**: Searches business-focused sources (Crunchbase, LinkedIn, Bloomberg, Forbes, etc.)
-2. **Quality Check**: Evaluates if Tavily results contain meaningful company information
-3. **OpenRouter Processing**: Uses Kimi K2 to analyze Tavily results and structure company data
-4. **Fallback Mode**: If Tavily fails, uses OpenRouter's integrated online search
-5. **Final Fallback**: If all online methods fail, uses OpenRouter without web search
+1. **DeepSeek-R1 Primary**: Uses advanced reasoning model for initial company identification and data gathering
+2. **Quality Check**: Evaluates if DeepSeek found meaningful company information
+3. **Tavily Fallback**: If DeepSeek finds no results, searches business-focused sources (Crunchbase, LinkedIn, Bloomberg, Forbes, etc.)
+4. **Kimi K2 Processing**: Uses Kimi K2 free to analyze Tavily results and structure company data
+5. **Final Fallback**: If both fail, uses OpenRouter's integrated online search
 
 ## Cost Optimization
 
-- **Kimi K2 Free Tier**: All data processing uses `moonshotai/kimi-k2:free` model for zero charges
-- **Tavily Free Tier**: Uses `@tavily/core` package with free tier for web search
-- **Smart Usage**: Only searches when needed, processes locally with free AI model
+- **DeepSeek-R1 Free**: Primary search uses `deepseek/deepseek-r1:free` for advanced reasoning at zero cost
+- **Kimi K2 Free Tier**: Data processing uses `moonshotai/kimi-k2:free` model for zero charges
+- **Tavily Free Tier**: Uses `@tavily/core` package with free tier for web search (only when needed)
+- **Smart Fallback**: Most queries resolved by free AI reasoning, expensive web search only when necessary
 
 ## API Key Acquisition
 

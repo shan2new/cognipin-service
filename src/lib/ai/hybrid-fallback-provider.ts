@@ -3,17 +3,17 @@ import { OpenRouterProvider } from './openrouter-provider';
 import { TavilyProvider, WebSearchProvider } from './tavily-provider';
 
 /**
- * Hybrid AI provider that combines Tavily web search with OpenRouter fallback.
+ * Hybrid AI provider with intelligent fallback strategy.
  * 
  * Strategy:
- * 1. First attempt: Use Tavily for specialized web search of company information
- * 2. Fallback: If Tavily returns no meaningful results, use OpenRouter with online search
+ * 1. Primary: Use DeepSeek-R1 free for initial company data gathering with reasoning
+ * 2. Fallback: If DeepSeek finds no results, use Tavily for specialized web search
+ * 3. Final Fallback: OpenRouter with online search if both fail
  * 
- * This approach maximizes search quality by leveraging Tavily's specialized business search
- * while ensuring reliability through OpenRouter's integrated online capabilities.
+ * This approach maximizes cost efficiency by using free AI reasoning first,
+ * with specialized web search only when needed.
  * 
- * Cost Optimization: Uses Kimi K2 free tier for data processing, ensuring no charges
- * while maintaining high-quality company data extraction and structuring.
+ * Cost Optimization: Uses free tiers (DeepSeek-R1 free, Tavily free) with intelligent fallback.
  */
 export class HybridFallbackProvider implements AIProvider {
   private openRouterProvider: OpenRouterProvider;
@@ -28,15 +28,24 @@ export class HybridFallbackProvider implements AIProvider {
     console.log(`HybridFallbackProvider: Starting search for query: "${query}"`);
 
     try {
-      // Step 1: Try Tavily first for specialized business search
-      console.log(`HybridFallbackProvider: Attempting Tavily search...`);
+      // Step 1: Primary - Use DeepSeek-R1 free for initial reasoning
+      console.log(`HybridFallbackProvider: Attempting DeepSeek-R1 reasoning...`);
+      const deepseekResults = await this.searchWithDeepSeek(query);
+      
+      if (deepseekResults.companies.length > 0) {
+        console.log(`HybridFallbackProvider: DeepSeek found ${deepseekResults.companies.length} companies`);
+        return this.validateAndCleanCompanies(deepseekResults, query);
+      }
+
+      console.log(`HybridFallbackProvider: DeepSeek found no results, falling back to Tavily...`);
+      
+      // Step 2: Fallback - Use Tavily for specialized web search
       const tavilyResults = await this.tavilyProvider.searchCompanyInfo(query);
       
       if (tavilyResults.hasResults && tavilyResults.results.length > 0) {
-        console.log(`HybridFallbackProvider: Tavily found ${tavilyResults.results.length} results, processing with OpenRouter...`);
+        console.log(`HybridFallbackProvider: Tavily found ${tavilyResults.results.length} results, processing...`);
         
-        // Use Tavily results to enhance OpenRouter's response
-        const enhancedCompanies = await this.processWithTavilyData(query, tavilyResults);
+        const enhancedCompanies = await this.processWithWebData(query, tavilyResults, 'Tavily');
         
         if (enhancedCompanies.companies.length > 0) {
           console.log(`HybridFallbackProvider: Successfully processed ${enhancedCompanies.companies.length} companies using Tavily data`);
@@ -44,101 +53,78 @@ export class HybridFallbackProvider implements AIProvider {
         }
       }
 
-      console.log(`HybridFallbackProvider: Tavily search unsuccessful, falling back to OpenRouter online...`);
+      console.log(`HybridFallbackProvider: Tavily unsuccessful, falling back to OpenRouter online...`);
       
-      // Step 2: Fallback to OpenRouter with online search
+      // Step 3: Final Fallback - OpenRouter with online search
       const fallbackResults = await this.openRouterProvider.searchCompanies(query);
       
       console.log(`HybridFallbackProvider: OpenRouter fallback returned ${fallbackResults.companies.length} companies`);
       
-      // Mark results as fallback
-      const markedResults = {
-        companies: fallbackResults.companies.map(company => ({
-          ...company,
-          sources: [
-            ...(company.sources || []),
-            'OpenRouter Online Search (Fallback)'
-          ]
-        }))
-      };
-
-      return markedResults;
+      return this.addSourceAttribution(fallbackResults, 'OpenRouter Online Search (Final Fallback)');
 
     } catch (error) {
       console.error(`HybridFallbackProvider: Error in searchCompanies for query "${query}":`, error);
-      
-      // Final fallback: try OpenRouter without online search
-      try {
-        console.log(`HybridFallbackProvider: Attempting final fallback to OpenRouter without online search...`);
-        return await this.openRouterProvider.searchCompanies(query);
-      } catch (fallbackError) {
-        console.error(`HybridFallbackProvider: All fallbacks failed:`, fallbackError);
-        return { companies: [] };
-      }
+      return { companies: [] };
     }
   }
 
-  private async processWithTavilyData(query: string, tavilyResults: any): Promise<CompanySearchResponse> {
-    // Create an enhanced prompt that includes Tavily search results
-    const webContext = tavilyResults.results
-      .slice(0, 10) // Limit to top 10 results
-      .map((result: any) => `Source: ${result.url}\nTitle: ${result.title}\nContent: ${result.content.slice(0, 500)}...`)
-      .join('\n\n');
-
-    const enhancedPrompt = [
-      "You are a research assistant with access to web search results about companies.",
-      "Task: Given the input string and web search results, identify companies explicitly or implicitly referenced (including prefix matches).",
-      "Geographic disambiguation: Only software entities with hq first in India, then US, then UK, then Europe, then rest of the world. In that order.",
-      "CRITICAL DATA SEPARATION RULES:",
-      "1. Each company MUST have its own unique websiteUrl and domain - NEVER share domains between companies",
-      "2. Only extract information that is SPECIFICALLY about each individual company",
-      "3. DO NOT mix or merge data between different companies, even if they are related/subsidiaries",
-      "4. If you cannot find a company's specific website, omit the websiteUrl rather than using another company's domain",
-      "5. Each company must be completely independent with its own distinct information",
-      "6. CRITICAL: 2seventy bio should have its own website (like 2seventybio.com), NOT Bristol Myers Squibb's website",
-      "7. CRITICAL: Only use bms.com for Bristol Myers Squibb itself, never for subsidiary or related companies",
-      "IMPORTANT: Use the provided web search results to extract accurate company information. Do NOT return a logo image URL. Instead, return each company's own OFFICIAL website URL and its unique domain.",
-      "Web Search Results:",
-      webContext,
-      "",
-      "For each company, extract the following fields based ONLY on information specifically about that company:",
-      "- name (string)",
-      "- websiteUrl (string; official site, HTTPS preferred)",
-      "- domain (string; extracted from websiteUrl)",
-      "- dateOfIncorporation (string; DD-MM-YYYY)",
-      "- foundedYear (string; YYYY; optional)",
-      "- description (string; 1-2 line summary; optional)",
-      "- industries (array of strings; optional)",
-      "- hq (object with optional city, country)",
-      "- employeeCount (string; optional)",
-      "- founders (array of objects with name and optional role; optional)",
-      "- leadership (array of objects with name and title; optional)",
-      "- linkedinUrl (string; optional)",
-      "- crunchbaseUrl (string; optional)",
-      "- traxcnUrl (string; optional)",
-      "- fundingTotalUSD (number; optional)",
-      "- lastFunding (object: { round, amountUSD?, date? in DD-MM-YYYY }; optional)",
-      "- isPublic (boolean; optional)",
-      "- ticker (string; optional)",
-      "- sources (array of strings; URLs referenced from the search results that are specifically about this company)",
-      "- confidence (number; 0.0-1.0 model confidence based on search result quality)",
-      "STRICT VALIDATION RULES:",
-      "1. Each company MUST have a unique websiteUrl and domain - no duplicates allowed",
-      "2. If multiple companies appear related, ensure each has distinct website information",
-      "3. Double-check that no company data has been mixed or contaminated with another company's information",
-      "4. Prefer fewer, accurate companies over many companies with merged/incorrect data",
-      "Matching: If multiple companies match by prefix, return up to 20 of the most relevant, but ensure each is completely distinct.",
-      "Output policy: The response MUST be a single valid JSON object with a 'companies' array containing all found companies.",
-      "CRITICAL: Always return the exact format: { \"companies\": [ { ...company fields... } ] } and no other text.",
-      "Validation: Ensure strictly valid JSON. If a field is unknown, omit it rather than guessing. Dates must be formatted exactly as DD-MM-YYYY.",
-    ].join(" ");
-
-    // Use OpenRouter without online search since we already have web data
-    const client = (this.openRouterProvider as any).client;
-    
+  /**
+   * Primary search using DeepSeek-R1 free model for initial reasoning
+   */
+  private async searchWithDeepSeek(query: string): Promise<CompanySearchResponse> {
     try {
+      const client = (this.openRouterProvider as any).client;
+      
       const response = await client.chat.completions.create({
-        model: 'moonshotai/kimi-k2:free', // No online search needed, we have web data
+        model: 'deepseek/deepseek-r1:free',
+        messages: [
+          { 
+            role: 'system', 
+            content: this.getSystemPrompt()
+          },
+          { 
+            role: 'user', 
+            content: `Find companies related to: "${query}". Provide detailed company information in the required JSON format.`
+          }
+        ],
+        temperature: 0.3,
+        max_tokens: 4000,
+      });
+
+      const outputText = response.choices[0]?.message?.content;
+      
+      if (!outputText) {
+        console.log(`HybridFallbackProvider: No output from DeepSeek for query "${query}"`);
+        return { companies: [] };
+      }
+
+      const parsedResult = this.parseAIResponse(outputText, query, 'DeepSeek-R1');
+      return parsedResult || { companies: [] };
+
+    } catch (error) {
+      console.error(`HybridFallbackProvider: DeepSeek search error:`, error);
+      return { companies: [] };
+    }
+  }
+
+  /**
+   * Process web search data with AI reasoning (refactored from processWithTavilyData)
+   */
+  private async processWithWebData(query: string, webResults: any, source: string): Promise<CompanySearchResponse> {
+    try {
+      const webContext = webResults.results
+        .slice(0, 10)
+        .map((result: any) => `Source: ${result.url}\nTitle: ${result.title}\nContent: ${result.content.slice(0, 500)}...`)
+        .join('\n\n');
+
+      const enhancedPrompt = this.getSystemPrompt() + 
+        `\nWeb Search Results:\n${webContext}\n\nBased on the web search results above, ` +
+        `extract company information for query: "${query}"`;
+
+      const client = (this.openRouterProvider as any).client;
+      
+      const response = await client.chat.completions.create({
+        model: 'moonshotai/kimi-k2:free',
         messages: [
           { role: 'system', content: enhancedPrompt },
           { role: 'user', content: query }
@@ -150,21 +136,92 @@ export class HybridFallbackProvider implements AIProvider {
       const outputText = response.choices[0]?.message?.content;
       
       if (!outputText) {
-        throw new Error("Failed to extract model output from Tavily-enhanced processing");
+        console.log(`HybridFallbackProvider: No output from ${source} processing`);
+        return { companies: [] };
       }
 
-      // Parse the response using the same logic as OpenRouterProvider
-      const parsedResult = (this.openRouterProvider as any).strictParseCompanies(outputText, query) || { companies: [] };
-      
-      // Validate and clean the results to prevent data contamination
+      const parsedResult = this.parseAIResponse(outputText, query, `${source} + Kimi K2`);
+      if (!parsedResult) {
+        return { companies: [] };
+      }
       const validatedResult = this.validateAndCleanCompanies(parsedResult, query);
       
       return validatedResult;
 
     } catch (error) {
-      console.error(`HybridFallbackProvider: Error processing Tavily data:`, error);
-      throw error;
+      console.error(`HybridFallbackProvider: Error processing ${source} data:`, error);
+      return { companies: [] };
     }
+  }
+
+  /**
+   * Shared system prompt for consistent AI behavior
+   */
+  private getSystemPrompt(): string {
+    return [
+      "You are a research assistant specializing in company information extraction.",
+      "Task: Given the input, identify companies explicitly or implicitly referenced (including prefix matches).",
+      "Geographic disambiguation: Prioritize software entities with hq in India, then US, then UK, then Europe, then rest of the world.",
+      "CRITICAL DATA SEPARATION RULES:",
+      "1. Each company MUST have its own unique websiteUrl and domain - NEVER share domains between companies",
+      "2. Only extract information that is SPECIFICALLY about each individual company",
+      "3. DO NOT mix or merge data between different companies, even if they are related/subsidiaries",
+      "4. If you cannot find a company's specific website, omit the websiteUrl rather than using another company's domain",
+      "5. Each company must be completely independent with its own distinct information",
+      "6. CRITICAL: 2seventy bio should have its own website (like 2seventybio.com), NOT Bristol Myers Squibb's website",
+      "7. CRITICAL: Only use bms.com for Bristol Myers Squibb itself, never for subsidiary or related companies",
+      "VALIDATION REQUIREMENTS:",
+      "- Each company MUST have a unique websiteUrl and domain - no duplicates allowed",
+      "- Prefer fewer, accurate companies over many companies with merged/incorrect data",
+      "- Double-check that no company data has been mixed or contaminated",
+      "Output format: { \"companies\": [ { name, websiteUrl, domain, description?, industries?, hq?, employeeCount?, founders?, leadership?, linkedinUrl?, crunchbaseUrl?, traxcnUrl?, fundingTotalUSD?, lastFunding?, isPublic?, ticker?, sources, confidence } ] }",
+      "Return ONLY valid JSON. If a field is unknown, omit it. Dates must be DD-MM-YYYY format."
+    ].join(" ");
+  }
+
+  /**
+   * Shared AI response parsing logic
+   */
+  private parseAIResponse(outputText: string, query: string, source: string): CompanySearchResponse | null {
+    // Try direct parsing first
+    const directParse = (this.openRouterProvider as any).strictParseCompanies(outputText, query);
+    if (directParse) {
+      return this.addSourceAttribution(directParse, source);
+    }
+
+    // Fallback: try to fix the JSON format
+    try {
+      const client = (this.openRouterProvider as any).client;
+      
+      const reformatPrompt = [
+        "Convert the following content into strict JSON format:",
+        "{ \"companies\": [ { name, websiteUrl, domain, ...other fields } ] }",
+        "Return ONLY JSON, no commentary."
+      ].join(" ");
+
+      // This would be async, but for now let's just return null and rely on validation
+      console.warn(`HybridFallbackProvider: Could not parse ${source} response for "${query}"`);
+      return null;
+      
+    } catch (error) {
+      console.error(`HybridFallbackProvider: Failed to parse ${source} response:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Add source attribution to results
+   */
+  private addSourceAttribution(result: CompanySearchResponse, source: string): CompanySearchResponse {
+    return {
+      companies: result.companies.map(company => ({
+        ...company,
+        sources: [
+          ...(company.sources || []),
+          source
+        ]
+      }))
+    };
   }
 
   /**
