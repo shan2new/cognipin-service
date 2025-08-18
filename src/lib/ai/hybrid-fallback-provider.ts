@@ -95,6 +95,8 @@ export class HybridFallbackProvider implements AIProvider {
       "3. DO NOT mix or merge data between different companies, even if they are related/subsidiaries",
       "4. If you cannot find a company's specific website, omit the websiteUrl rather than using another company's domain",
       "5. Each company must be completely independent with its own distinct information",
+      "6. CRITICAL: 2seventy bio should have its own website (like 2seventybio.com), NOT Bristol Myers Squibb's website",
+      "7. CRITICAL: Only use bms.com for Bristol Myers Squibb itself, never for subsidiary or related companies",
       "IMPORTANT: Use the provided web search results to extract accurate company information. Do NOT return a logo image URL. Instead, return each company's own OFFICIAL website URL and its unique domain.",
       "Web Search Results:",
       webContext,
@@ -201,6 +203,12 @@ export class HybridFallbackProvider implements AIProvider {
           console.warn(`HybridFallbackProvider: Domain mismatch for company "${company.name}". URL domain: ${urlDomain}, provided domain: ${normalizedDomain}. Fixing.`);
           company.domain = urlDomain;
         }
+
+        // Additional validation: Check if domain makes sense for the company name
+        if (!this.isDomainValidForCompany(company.name, urlDomain)) {
+          console.warn(`HybridFallbackProvider: Domain "${urlDomain}" doesn't appear to belong to company "${company.name}". Skipping company.`);
+          continue;
+        }
       } catch (error) {
         console.warn(`HybridFallbackProvider: Invalid websiteUrl for company "${company.name}": ${company.websiteUrl}. Skipping.`);
         continue;
@@ -226,5 +234,63 @@ export class HybridFallbackProvider implements AIProvider {
     return {
       companies: cleanedCompanies
     };
+  }
+
+  /**
+   * Validates if a domain likely belongs to the given company name.
+   * This helps catch cases where AI incorrectly assigns one company's domain to another.
+   */
+  private isDomainValidForCompany(companyName: string, domain: string): boolean {
+    // Normalize names for comparison
+    const normalizedCompanyName = companyName.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const normalizedDomain = domain.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+    // Check for obvious mismatches
+    const companyWords = companyName.toLowerCase().split(/\s+/).filter(word => 
+      word.length > 2 && !['inc', 'llc', 'ltd', 'corp', 'company', 'co', 'group', 'holdings'].includes(word)
+    );
+
+    // If we can extract meaningful words from company name, check if any appear in domain
+    if (companyWords.length > 0) {
+      const hasMatchingWord = companyWords.some(word => {
+        // Remove common business suffixes for better matching
+        const cleanWord = word.replace(/(?:bio|tech|soft|systems?|solutions?|corp|inc|llc)$/, '');
+        if (cleanWord.length < 3) return false;
+        
+        return normalizedDomain.includes(cleanWord) || normalizedDomain.includes(word);
+      });
+
+      if (!hasMatchingWord) {
+        // Special cases for known domain patterns
+        const specialCases = [
+          // Handle cases like "2seventy bio" -> should not match "bms.com"
+          { pattern: /seventy/i, validDomains: ['seventybio', '2seventy'] },
+          { pattern: /bristol.*myers|bms/i, validDomains: ['bms'] },
+        ];
+
+        for (const specialCase of specialCases) {
+          if (specialCase.pattern.test(companyName)) {
+            const domainMatches = specialCase.validDomains.some(validDomain => 
+              normalizedDomain.includes(validDomain)
+            );
+            return domainMatches;
+          }
+        }
+
+        return false;
+      }
+    }
+
+    // Additional check: prevent obvious cross-contamination
+    const problematicDomains = ['bms.com', 'bristol-myers.com'];
+    const isProblematicDomain = problematicDomains.includes(domain);
+    
+    if (isProblematicDomain) {
+      // Only allow these domains for companies that clearly match
+      const allowedForBMS = /bristol.*myers|bms/i.test(companyName);
+      return allowedForBMS;
+    }
+
+    return true; // Allow if no obvious mismatch detected
   }
 }
