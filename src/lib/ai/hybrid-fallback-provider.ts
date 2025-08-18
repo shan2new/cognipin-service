@@ -3,6 +3,43 @@ import { OpenRouterProvider } from './openrouter-provider';
 import { TavilyProvider, WebSearchProvider } from './tavily-provider';
 
 /**
+ * Configuration for a model used in the fallback chain
+ */
+export interface ModelConfig {
+  /** The model identifier used for API calls */
+  id: string;
+  
+  /** Human-readable name of the model */
+  name: string;
+  
+  /** Temperature setting for the model (0.0-1.0) */
+  temperature?: number;
+  
+  /** Maximum tokens to generate */
+  maxTokens?: number;
+  
+  /** Model purpose/role in the fallback chain */
+  role?: 'primary' | 'secondary' | 'reasoning' | 'web-processing';
+}
+
+/**
+ * Configuration for the hybrid fallback provider
+ */
+export interface HybridFallbackProviderConfig {
+  /** Primary fast models to try first (in order of priority) */
+  primaryModels: ModelConfig[];
+  
+  /** Secondary models with better reasoning capabilities (in order of priority) */
+  secondaryModels: ModelConfig[];
+  
+  /** Models specialized for complex reasoning tasks */
+  reasoningModels: ModelConfig[];
+  
+  /** Models for processing web search results */
+  webProcessingModels: ModelConfig[];
+}
+
+/**
  * Speed-optimized hybrid AI provider with intelligent fallback strategy.
  * 
  * Strategy (optimized for speed):
@@ -19,45 +56,101 @@ import { TavilyProvider, WebSearchProvider } from './tavily-provider';
 export class HybridFallbackProvider implements AIProvider {
   private openRouterProvider: OpenRouterProvider;
   private tavilyProvider: TavilyProvider;
+  private config: HybridFallbackProviderConfig;
 
-  constructor(openRouterApiKey: string, tavilyApiKey: string) {
+  /**
+   * Default model configuration with recommended models and settings
+   */
+  static readonly DEFAULT_CONFIG: HybridFallbackProviderConfig = {
+    primaryModels: [
+      { id: 'inception/mercury-coder:nitro', name: 'Mercury-Coder', temperature: 0.3, maxTokens: 3500, role: 'primary' },
+      // { id: 'meta-llama/llama-3.2-3b-instruct:free', name: 'Llama-3.1-8B', temperature: 0.3, maxTokens: 3000, role: 'primary' }
+    ],
+    secondaryModels: [
+      { id: 'mistralai/mistral-small-3.2-24b-instruct:free:nitro', name: 'Mistral-Small', temperature: 0.3, maxTokens: 3500, role: 'secondary' }
+    ],
+    reasoningModels: [
+      { id: 'deepseek/deepseek-r1:free', name: 'DeepSeek-R1', temperature: 0.3, maxTokens: 4000, role: 'reasoning' }
+    ],
+    webProcessingModels: [
+      { id: 'moonshotai/kimi-k2:free', name: 'Kimi K2', temperature: 0.3, maxTokens: 4000, role: 'web-processing' }
+    ]
+  };
+
+  /**
+   * Create a new HybridFallbackProvider
+   * 
+   * @param openRouterApiKey - API key for OpenRouter
+   * @param tavilyApiKey - API key for Tavily
+   * @param config - Optional custom model configuration (default: DEFAULT_CONFIG)
+   */
+  constructor(
+    openRouterApiKey: string, 
+    tavilyApiKey: string, 
+    config?: Partial<HybridFallbackProviderConfig>
+  ) {
     this.openRouterProvider = new OpenRouterProvider(openRouterApiKey);
     this.tavilyProvider = new TavilyProvider(tavilyApiKey);
+    
+    // Merge provided config with defaults
+    this.config = {
+      primaryModels: config?.primaryModels || [...HybridFallbackProvider.DEFAULT_CONFIG.primaryModels],
+      secondaryModels: config?.secondaryModels || [...HybridFallbackProvider.DEFAULT_CONFIG.secondaryModels],
+      reasoningModels: config?.reasoningModels || [...HybridFallbackProvider.DEFAULT_CONFIG.reasoningModels],
+      webProcessingModels: config?.webProcessingModels || [...HybridFallbackProvider.DEFAULT_CONFIG.webProcessingModels]
+    };
   }
 
   async searchCompanies(query: string): Promise<CompanySearchResponse> {
     console.log(`HybridFallbackProvider: Starting speed-optimized search for query: "${query}"`);
 
     try {
-      // Step 1: Primary - Fast Llama 3.1 8B for straightforward cases
-      console.log(`HybridFallbackProvider: Attempting fast Llama 3.1 8B...`);
-      const llamaResults = await this.searchWithFastModel(query, 'meta-llama/llama-3.1-8b-instruct:free', 'Llama-3.1-8B');
-      
-      if (this.isResultSufficient(llamaResults)) {
-        console.log(`HybridFallbackProvider: Llama 3.1 8B found sufficient results (${llamaResults.companies.length} companies)`);
-        return this.validateAndCleanCompanies(llamaResults, query);
+      // Step 1: Try primary models in order of priority
+      if (this.config.primaryModels.length > 0) {
+        for (const model of this.config.primaryModels) {
+          console.log(`HybridFallbackProvider: Attempting primary model ${model.name}...`);
+          const results = await this.searchWithModel(query, model);
+          
+          if (this.isResultSufficient(results)) {
+            console.log(`HybridFallbackProvider: ${model.name} found sufficient results (${results.companies.length} companies)`);
+            return this.validateAndCleanCompanies(results, query);
+          }
+        }
       }
 
-      console.log(`HybridFallbackProvider: Llama results insufficient, trying Mistral Small...`);
+      console.log(`HybridFallbackProvider: Primary models insufficient, trying secondary models...`);
       
-      // Step 2: Secondary - Mistral Small for harder cases (still fast)
-      const mistralResults = await this.searchWithFastModel(query, 'mistralai/mistral-small-3.1-24b-instruct:free', 'Mistral-Small');
-      
-      if (this.isResultSufficient(mistralResults)) {
-        console.log(`HybridFallbackProvider: Mistral Small found sufficient results (${mistralResults.companies.length} companies)`);
-        return this.validateAndCleanCompanies(mistralResults, query);
+      // Step 2: Try secondary models in order of priority
+      let lastSecondaryResult: CompanySearchResponse = { companies: [] };
+      if (this.config.secondaryModels.length > 0) {
+        for (const model of this.config.secondaryModels) {
+          console.log(`HybridFallbackProvider: Attempting secondary model ${model.name}...`);
+          const results = await this.searchWithModel(query, model);
+          
+          if (this.isResultSufficient(results)) {
+            console.log(`HybridFallbackProvider: ${model.name} found sufficient results (${results.companies.length} companies)`);
+            return this.validateAndCleanCompanies(results, query);
+          }
+          
+          // Keep track of last secondary result for reasoning check
+          if (results.companies.length > 0) {
+            lastSecondaryResult = results as CompanySearchResponse;
+          }
+        }
       }
 
-      console.log(`HybridFallbackProvider: Fast models insufficient, checking if reasoning needed...`);
+      console.log(`HybridFallbackProvider: Secondary models insufficient, checking if reasoning needed...`);
       
-      // Step 3: Reasoning Fallback - DeepSeek R1 for disambiguation
-      if (this.needsReasoning(query, mistralResults)) {
-        console.log(`HybridFallbackProvider: Query needs reasoning, using DeepSeek R1...`);
-        const deepseekResults = await this.searchWithDeepSeek(query);
-        
-        if (this.isResultSufficient(deepseekResults)) {
-          console.log(`HybridFallbackProvider: DeepSeek reasoning found sufficient results (${deepseekResults.companies.length} companies)`);
-          return this.validateAndCleanCompanies(deepseekResults, query);
+      // Step 3: Try reasoning models if needed
+      if (this.needsReasoning(query, lastSecondaryResult) && this.config.reasoningModels.length > 0) {
+        for (const model of this.config.reasoningModels) {
+          console.log(`HybridFallbackProvider: Query needs reasoning, using ${model.name}...`);
+          const results = await this.searchWithReasoningModel(query, model);
+          
+          if (this.isResultSufficient(results)) {
+            console.log(`HybridFallbackProvider: ${model.name} reasoning found sufficient results (${results.companies.length} companies)`);
+            return this.validateAndCleanCompanies(results, query);
+          }
         }
       }
 
@@ -69,11 +162,15 @@ export class HybridFallbackProvider implements AIProvider {
       if (tavilyResults.hasResults && tavilyResults.results.length > 0) {
         console.log(`HybridFallbackProvider: Tavily found ${tavilyResults.results.length} results, processing...`);
         
-        const enhancedCompanies = await this.processWithWebData(query, tavilyResults, 'Tavily');
-        
-        if (enhancedCompanies.companies.length > 0) {
-          console.log(`HybridFallbackProvider: Successfully processed ${enhancedCompanies.companies.length} companies using Tavily data`);
-          return enhancedCompanies;
+        if (this.config.webProcessingModels.length > 0) {
+          for (const model of this.config.webProcessingModels) {
+            const enhancedCompanies = await this.processWithWebData(query, tavilyResults, model);
+            
+            if (enhancedCompanies.companies.length > 0) {
+              console.log(`HybridFallbackProvider: Successfully processed ${enhancedCompanies.companies.length} companies using Tavily data and ${model.name}`);
+              return enhancedCompanies;
+            }
+          }
         }
       }
 
@@ -87,14 +184,14 @@ export class HybridFallbackProvider implements AIProvider {
   }
 
   /**
-   * Fast model search for primary and secondary queries
+   * Generalized model search for any model in the pipeline
    */
-  private async searchWithFastModel(query: string, model: string, modelName: string): Promise<CompanySearchResponse> {
+  private async searchWithModel(query: string, modelConfig: ModelConfig): Promise<CompanySearchResponse> {
     try {
       const client = (this.openRouterProvider as any).client;
       
       const response = await client.chat.completions.create({
-        model: model,
+        model: modelConfig.id,
         messages: [
           { 
             role: 'system', 
@@ -105,22 +202,22 @@ export class HybridFallbackProvider implements AIProvider {
             content: `Find companies related to: "${query}". Provide detailed company information in the required JSON format.`
           }
         ],
-        temperature: 0.3,
-        max_tokens: 3000, // Slightly less for faster response
+        temperature: modelConfig.temperature ?? 0.3,
+        max_tokens: modelConfig.maxTokens ?? 3000,
       });
 
       const outputText = response.choices[0]?.message?.content;
       
       if (!outputText) {
-        console.log(`HybridFallbackProvider: No output from ${modelName} for query "${query}"`);
+        console.log(`HybridFallbackProvider: No output from ${modelConfig.name} for query "${query}"`);
         return { companies: [] };
       }
 
-      const parsedResult = this.parseAIResponse(outputText, query, modelName);
+      const parsedResult = this.parseAIResponse(outputText, query, modelConfig.name);
       return parsedResult || { companies: [] };
 
     } catch (error) {
-      console.error(`HybridFallbackProvider: ${modelName} search error:`, error);
+      console.error(`HybridFallbackProvider: ${modelConfig.name} search error:`, error);
       return { companies: [] };
     }
   }
@@ -180,14 +277,14 @@ export class HybridFallbackProvider implements AIProvider {
   }
 
   /**
-   * DeepSeek-R1 search for reasoning-heavy disambiguation cases
+   * Specialized search with reasoning-focused models for complex disambiguation cases
    */
-  private async searchWithDeepSeek(query: string): Promise<CompanySearchResponse> {
+  private async searchWithReasoningModel(query: string, modelConfig: ModelConfig): Promise<CompanySearchResponse> {
     try {
       const client = (this.openRouterProvider as any).client;
       
       const response = await client.chat.completions.create({
-        model: 'deepseek/deepseek-r1:free',
+        model: modelConfig.id,
         messages: [
           { 
             role: 'system', 
@@ -195,33 +292,33 @@ export class HybridFallbackProvider implements AIProvider {
           },
           { 
             role: 'user', 
-            content: `Find companies related to: "${query}". Provide detailed company information in the required JSON format.`
+            content: `Find companies related to: "${query}". This query may require disambiguation or careful analysis. Provide detailed company information in the required JSON format.`
           }
         ],
-        temperature: 0.3,
-        max_tokens: 4000,
+        temperature: modelConfig.temperature ?? 0.3,
+        max_tokens: modelConfig.maxTokens ?? 4000,
       });
 
       const outputText = response.choices[0]?.message?.content;
       
       if (!outputText) {
-        console.log(`HybridFallbackProvider: No output from DeepSeek for query "${query}"`);
+        console.log(`HybridFallbackProvider: No output from ${modelConfig.name} for query "${query}"`);
         return { companies: [] };
       }
 
-      const parsedResult = this.parseAIResponse(outputText, query, 'DeepSeek-R1');
+      const parsedResult = this.parseAIResponse(outputText, query, modelConfig.name);
       return parsedResult || { companies: [] };
 
     } catch (error) {
-      console.error(`HybridFallbackProvider: DeepSeek search error:`, error);
+      console.error(`HybridFallbackProvider: ${modelConfig.name} reasoning search error:`, error);
       return { companies: [] };
     }
   }
 
   /**
-   * Process web search data with AI reasoning (refactored from processWithTavilyData)
+   * Process web search data with AI reasoning
    */
-  private async processWithWebData(query: string, webResults: any, source: string): Promise<CompanySearchResponse> {
+  private async processWithWebData(query: string, webResults: any, modelConfig: ModelConfig): Promise<CompanySearchResponse> {
     try {
       const webContext = webResults.results
         .slice(0, 10)
@@ -235,23 +332,23 @@ export class HybridFallbackProvider implements AIProvider {
       const client = (this.openRouterProvider as any).client;
       
       const response = await client.chat.completions.create({
-        model: 'moonshotai/kimi-k2:free',
+        model: modelConfig.id,
         messages: [
           { role: 'system', content: enhancedPrompt },
           { role: 'user', content: query }
         ],
-        temperature: 0.3,
-        max_tokens: 4000,
+        temperature: modelConfig.temperature ?? 0.3,
+        max_tokens: modelConfig.maxTokens ?? 4000,
       });
 
       const outputText = response.choices[0]?.message?.content;
       
       if (!outputText) {
-        console.log(`HybridFallbackProvider: No output from ${source} processing`);
+        console.log(`HybridFallbackProvider: No output from ${modelConfig.name} processing`);
         return { companies: [] };
       }
 
-      const parsedResult = this.parseAIResponse(outputText, query, `${source} + Kimi K2`);
+      const parsedResult = this.parseAIResponse(outputText, query, `Tavily + ${modelConfig.name}`);
       if (!parsedResult) {
         return { companies: [] };
       }
@@ -260,7 +357,7 @@ export class HybridFallbackProvider implements AIProvider {
       return validatedResult;
 
     } catch (error) {
-      console.error(`HybridFallbackProvider: Error processing ${source} data:`, error);
+      console.error(`HybridFallbackProvider: Error processing with ${modelConfig.name}:`, error);
       return { companies: [] };
     }
   }
