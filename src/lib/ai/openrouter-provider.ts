@@ -61,7 +61,7 @@ export class OpenRouterProvider implements AIProvider {
 
     try {
       const response = await this.client.chat.completions.create({
-        model: 'moonshotai/kimi-k2:free:online', // Enable web search with Kimi K2 free model
+        model: 'moonshotai/kimi-k2:free',
         messages: [
           { role: 'system', content: prompt },
           { role: 'user', content: query }
