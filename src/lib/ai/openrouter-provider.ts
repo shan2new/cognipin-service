@@ -1,5 +1,5 @@
 import { OpenAI } from 'openai';
-import { AIProvider, CompanySearchResponse } from './interfaces';
+import { AIProvider, CompanySearchResponse, RoleSuggestionContext, RoleSuggestionResponse } from './interfaces';
 
 /**
  * OpenRouter provider using Moonshot AI's Kimi K2 free model with web search capabilities.
@@ -22,6 +22,61 @@ export class OpenRouterProvider implements AIProvider {
         'X-Title': 'Cognipin Company Search'
       },
     });
+  }
+
+  async suggestRoles(context: RoleSuggestionContext): Promise<RoleSuggestionResponse> {
+    const systemPrompt = [
+      'You suggest precise job role titles for a candidate applying to a specific company.',
+      'Given company and user context, produce 5-8 role titles that fit the user and are common at the target company.',
+      'Rules:',
+      '- Prefer standardized, searchable titles (e.g., "Senior Frontend Engineer", "Full-Stack Developer", "Product Manager").',
+      '- Avoid internal-only ladders or overly niche titles.',
+      '- Include variants across seniority if reasonable.',
+      '- Keep titles concise; provide a short reason and confidence 0.0-1.0.',
+      'Output MUST be strict JSON only in shape: { "suggestions": [ { "role": string, "reason"?: string, "confidence"?: number } ] }.'
+    ].join(' ');
+
+    const userContent = [
+      `Company: ${JSON.stringify(context.company)}`,
+      `User: ${JSON.stringify(context.user)}`,
+      'Return only JSON as specified.'
+    ].join('\n');
+
+    try {
+      const response = await this.client.chat.completions.create({
+        model: 'mistralai/mistral-small-3.2-24b-instruct:free:nitro',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userContent }
+        ],
+        temperature: 0.2,
+        max_tokens: 800,
+      });
+
+      const outputText = response.choices[0]?.message?.content || '';
+      const first = this.strictParseRoleSuggestions(outputText);
+      if (first) return first;
+
+      // Reformat attempt
+      const reformat = await this.client.chat.completions.create({
+        model: 'moonshotai/kimi-k2:free',
+        messages: [
+          { role: 'system', content: 'Convert the following into STRICT JSON that matches { suggestions: Array<{ role: string; reason?: string; confidence?: number }> }. Output JSON only.' },
+          { role: 'user', content: outputText }
+        ],
+        temperature: 0,
+        max_tokens: 800,
+      });
+      const reformatted = reformat.choices[0]?.message?.content || '';
+      const second = this.strictParseRoleSuggestions(reformatted);
+      if (second) return second;
+
+      console.error('OpenRouter suggestRoles: failed to parse JSON', { outputText, reformatted });
+      return { suggestions: [] };
+    } catch (err) {
+      console.error('OpenRouter suggestRoles error:', err);
+      return { suggestions: [] };
+    }
   }
 
   async searchCompanies(query: string): Promise<CompanySearchResponse> {
@@ -192,6 +247,58 @@ export class OpenRouterProvider implements AIProvider {
 
       return null;
     } catch {
+      return null;
+    }
+  }
+
+  private strictParseRoleSuggestions(raw: string): RoleSuggestionResponse | null {
+    let text = (raw || '').trim();
+    if (text.startsWith('```json')) {
+      text = text.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+    } else if (text.startsWith('```')) {
+      text = text.replace(/^```\s*/, '').replace(/\s*```$/, '');
+    }
+
+    try {
+      const parsed: any = JSON.parse(text);
+      if (parsed && Array.isArray(parsed.suggestions)) {
+        return {
+          suggestions: parsed.suggestions
+            .map((s: any) => ({
+              role: String(s.role ?? s).trim(),
+              reason: s.reason,
+              confidence: typeof s.confidence === 'number' ? s.confidence : undefined,
+            }))
+            .filter((s: any) => s.role),
+        };
+      }
+      if (Array.isArray(parsed)) {
+        return { suggestions: parsed.map((r: any) => ({ role: String(r).trim() })).filter((s: any) => s.role) };
+      }
+      if (parsed && Array.isArray(parsed.roles)) {
+        return { suggestions: parsed.roles.map((r: any) => ({ role: String(r).trim() })).filter((s: any) => s.role) };
+      }
+      return null;
+    } catch {
+      const firstBrace = text.indexOf('{');
+      const lastBrace = text.lastIndexOf('}');
+      if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+        try {
+          const candidate = text.slice(firstBrace, lastBrace + 1);
+          const parsed: any = JSON.parse(candidate);
+          if (parsed && Array.isArray(parsed.suggestions)) {
+            return {
+              suggestions: parsed.suggestions
+                .map((s: any) => ({
+                  role: String(s.role ?? s).trim(),
+                  reason: s.reason,
+                  confidence: typeof s.confidence === 'number' ? s.confidence : undefined,
+                }))
+                .filter((s: any) => s.role),
+            };
+          }
+        } catch {}
+      }
       return null;
     }
   }

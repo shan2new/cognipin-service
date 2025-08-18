@@ -27,6 +27,7 @@ export interface CompanySearchResponse {
 
 export interface AIProvider {
   searchCompanies(query: string): Promise<CompanySearchResponse>;
+  suggestRoles(context: RoleSuggestionContext): Promise<RoleSuggestionResponse>;
 }
 
 export interface RateLimiter {
@@ -36,4 +37,30 @@ export interface RateLimiter {
 
 export interface LogoDownloader {
   downloadLogo(domain: string): Promise<string | null>; // Returns base64 encoded image
+}
+
+// Role Suggestion Types
+export interface RoleSuggestionContext {
+  company: {
+    name: string
+    domain?: string | null
+    industries?: string[] | null
+    description?: string | null
+    hq?: { city?: string; country?: string } | null
+    employeeCount?: string | null
+  }
+  user: {
+    currentRole?: string | null
+    currentCompany?: string | null
+  }
+}
+
+export interface RoleSuggestion {
+  role: string
+  reason?: string
+  confidence?: number
+}
+
+export interface RoleSuggestionResponse {
+  suggestions: RoleSuggestion[]
 }

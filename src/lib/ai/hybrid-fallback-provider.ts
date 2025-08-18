@@ -1,4 +1,4 @@
-import { AIProvider, CompanySearchResponse, CompanySearchResult } from './interfaces';
+import { AIProvider, CompanySearchResponse, CompanySearchResult, RoleSuggestionContext, RoleSuggestionResponse } from './interfaces';
 import { OpenRouterProvider } from './openrouter-provider';
 import { TavilyProvider, WebSearchProvider } from './tavily-provider';
 
@@ -63,11 +63,10 @@ export class HybridFallbackProvider implements AIProvider {
    */
   static readonly DEFAULT_CONFIG: HybridFallbackProviderConfig = {
     primaryModels: [
-      { id: 'inception/mercury-coder:nitro', name: 'Mercury-Coder', temperature: 0.3, maxTokens: 3500, role: 'primary' },
-      // { id: 'meta-llama/llama-3.2-3b-instruct:free', name: 'Llama-3.1-8B', temperature: 0.3, maxTokens: 3000, role: 'primary' }
+      { id: 'mistralai/mistral-small-3.2-24b-instruct:free:nitro', name: 'Mistral-Small', temperature: 0.3, maxTokens: 3500, role: 'primary' }
     ],
     secondaryModels: [
-      { id: 'mistralai/mistral-small-3.2-24b-instruct:free:nitro', name: 'Mistral-Small', temperature: 0.3, maxTokens: 3500, role: 'secondary' }
+      { id: 'inception/mercury-coder:nitro', name: 'Mercury-Coder', temperature: 0.3, maxTokens: 3500, role: 'primary' },
     ],
     reasoningModels: [
       { id: 'deepseek/deepseek-r1:free', name: 'DeepSeek-R1', temperature: 0.3, maxTokens: 4000, role: 'reasoning' }
@@ -99,6 +98,17 @@ export class HybridFallbackProvider implements AIProvider {
       reasoningModels: config?.reasoningModels || [...HybridFallbackProvider.DEFAULT_CONFIG.reasoningModels],
       webProcessingModels: config?.webProcessingModels || [...HybridFallbackProvider.DEFAULT_CONFIG.webProcessingModels]
     };
+  }
+
+  async suggestRoles(context: RoleSuggestionContext): Promise<RoleSuggestionResponse> {
+    // For now, delegate to OpenRouter provider directly. In future, we can add
+    // fallback logic with alternative models if needed.
+    try {
+      return await this.openRouterProvider.suggestRoles(context);
+    } catch (error) {
+      console.error('HybridFallbackProvider.suggestRoles error:', error);
+      return { suggestions: [] };
+    }
   }
 
   async searchCompanies(query: string): Promise<CompanySearchResponse> {
@@ -508,56 +518,54 @@ export class HybridFallbackProvider implements AIProvider {
    * This helps catch cases where AI incorrectly assigns one company's domain to another.
    */
   private isDomainValidForCompany(companyName: string, domain: string): boolean {
-    // Normalize names for comparison
-    const normalizedCompanyName = companyName.toLowerCase().replace(/[^a-z0-9]/g, '');
-    const normalizedDomain = domain.toLowerCase().replace(/[^a-z0-9]/g, '');
+    // Normalize domain and company for robust comparison
+    const rawDomain = domain.toLowerCase().replace(/^www\./, '');
+    const domainCore = rawDomain.replace(/[^a-z0-9]/g, ''); // e.g., naukri.com -> naukricom
+    const companyLower = companyName.toLowerCase();
+    const companyCore = companyLower.replace(/[^a-z0-9]/g, ''); // e.g., Naukri.com -> naukricom
 
-    // Check for obvious mismatches
-    const companyWords = companyName.toLowerCase().split(/\s+/).filter(word => 
-      word.length > 2 && !['inc', 'llc', 'ltd', 'corp', 'company', 'co', 'group', 'holdings'].includes(word)
-    );
+    // Exact/core containment quickly approves legitimate cases like "Naukri.com" <-> "naukri.com"
+    if (companyCore && (domainCore.includes(companyCore) || companyCore.includes(domainCore))) {
+      return true;
+    }
 
-    // If we can extract meaningful words from company name, check if any appear in domain
-    if (companyWords.length > 0) {
-      const hasMatchingWord = companyWords.some(word => {
-        // Remove common business suffixes for better matching
-        const cleanWord = word.replace(/(?:bio|tech|soft|systems?|solutions?|corp|inc|llc)$/, '');
-        if (cleanWord.length < 3) return false;
-        
-        return normalizedDomain.includes(cleanWord) || normalizedDomain.includes(word);
-      });
+    // Token-based check: compare meaningful tokens from company name against domain
+    const stop = new Set([
+      'inc','llc','ltd','corp','company','co','group','holdings',
+      'com','in','io','ai','net','org','india','technologies','technology',
+      'software','labs','services','solutions','system','systems'
+    ]);
+    const tokens = companyLower
+      .split(/[^a-z0-9]+/) // split on punctuation and spaces
+      .map(w => w.replace(/(?:bio|tech|soft|systems?|solutions?|corp|inc|llc)$/i, ''))
+      .filter(w => w.length > 2 && !stop.has(w));
 
-      if (!hasMatchingWord) {
-        // Special cases for known domain patterns
-        const specialCases = [
-          // Handle cases like "2seventy bio" -> should not match "bms.com"
-          { pattern: /seventy/i, validDomains: ['seventybio', '2seventy'] },
-          { pattern: /bristol.*myers|bms/i, validDomains: ['bms'] },
-        ];
+    if (tokens.length > 0) {
+      const hasMatch = tokens.some(t => domainCore.includes(t));
+      if (hasMatch) return true;
 
-        for (const specialCase of specialCases) {
-          if (specialCase.pattern.test(companyName)) {
-            const domainMatches = specialCase.validDomains.some(validDomain => 
-              normalizedDomain.includes(validDomain)
-            );
-            return domainMatches;
-          }
+      // Special cases
+      const specialCases = [
+        { pattern: /seventy/i, validDomains: ['seventybio','2seventy'] },
+        { pattern: /bristol.*myers|bms/i, validDomains: ['bms'] },
+      ];
+      for (const sc of specialCases) {
+        if (sc.pattern.test(companyName)) {
+          return sc.validDomains.some(v => domainCore.includes(v));
         }
-
-        return false;
       }
+
+      // If we had meaningful tokens but none matched, treat as suspicious
+      return false;
     }
 
-    // Additional check: prevent obvious cross-contamination
+    // Problematic domains safeguard
     const problematicDomains = ['bms.com', 'bristol-myers.com'];
-    const isProblematicDomain = problematicDomains.includes(domain);
-    
-    if (isProblematicDomain) {
-      // Only allow these domains for companies that clearly match
-      const allowedForBMS = /bristol.*myers|bms/i.test(companyName);
-      return allowedForBMS;
+    if (problematicDomains.includes(domain)) {
+      return /bristol.*myers|bms/i.test(companyName);
     }
 
-    return true; // Allow if no obvious mismatch detected
+    // Default to allow if no evidence of mismatch
+    return true;
   }
 }
