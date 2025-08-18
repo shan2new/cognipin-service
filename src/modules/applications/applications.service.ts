@@ -9,6 +9,9 @@ import { computeCtc } from '../../lib/compensation'
 import { fetchMetadata } from '../../lib/metadata-fetcher'
 import { StageHistory } from '../../schema/stage-history.entity'
 import { ApplicationQASnapshot } from '../../schema/application-qa-snapshot.entity'
+import { ApplicationContact } from '../../schema/application-contact.entity'
+import { Conversation } from '../../schema/conversation.entity'
+import { InterviewRound } from '../../schema/interview-round.entity'
 
 @Injectable()
 export class ApplicationsService {
@@ -18,6 +21,9 @@ export class ApplicationsService {
     @InjectRepository(Company) private readonly companyRepo: Repository<Company>,
     @InjectRepository(StageHistory) private readonly historyRepo: Repository<StageHistory>,
     @InjectRepository(ApplicationQASnapshot) private readonly qaRepo: Repository<ApplicationQASnapshot>,
+    @InjectRepository(ApplicationContact) private readonly appContactRepo: Repository<ApplicationContact>,
+    @InjectRepository(Conversation) private readonly convoRepo: Repository<Conversation>,
+    @InjectRepository(InterviewRound) private readonly interviewRepo: Repository<InterviewRound>,
   ) {}
 
   async list(userId: string, q: Record<string, string | undefined>) {
@@ -132,11 +138,13 @@ export class ApplicationsService {
       past_leaving_reasons_text: body.qa_snapshot?.past_leaving_reasons_text ?? null,
     })
     await this.qaRepo.save(snap)
-    return saved
+    // Return hydrated application with relations for consistency with GET/PATCH
+    return this.getById(userId, saved.id)
   }
 
   async getById(userId: string, id: string) {
-    const app = await this.appRepo.findOne({ where: { id, user_id: userId } })
+    // Load company/platform relations to keep API responses consistent
+    const app = await this.appRepo.findOne({ where: { id, user_id: userId }, relations: ['company', 'platform'] })
     if (!app) throw new NotFoundException('Application not found')
     const [comp, qa] = await Promise.all([
       this.compRepo.findOne({ where: { application_id: id } }),
@@ -149,7 +157,10 @@ export class ApplicationsService {
     userId: string,
     id: string,
     body: Partial<{
+      company: { website_url?: string; company_id?: string }
+      company_id: string
       role: string
+      job_url: string | null
       platform_id: string | null
       source: string
       notes: string | null
@@ -164,8 +175,25 @@ export class ApplicationsService {
       }
     }>,
   ) {
-    const app = await this.getById(userId, id)
+    // Load a clean entity (no relations) to avoid relation object overriding FK during save
+    const appEntity = await this.appRepo.findOne({ where: { id, user_id: userId } })
+    if (!appEntity) throw new NotFoundException('Application not found')
+    const app = appEntity
+    // Company change
+    if (body.company) {
+      const company = await this.ensureCompany(body.company)
+      app.company_id = company.id
+      // Ensure no stale relation object persists
+      ;(app as any).company = undefined
+    }
+    if (body.company_id) {
+      const company = await this.companyRepo.findOne({ where: { id: body.company_id } })
+      if (!company) throw new BadRequestException('Invalid company_id')
+      app.company_id = company.id
+      ;(app as any).company = undefined
+    }
     if (body.role !== undefined) app.role = body.role
+    if ('job_url' in body) app.job_url = body.job_url ?? null
     if (body.platform_id !== undefined) app.platform_id = body.platform_id
     if (body.source !== undefined) app.source = body.source as any
     if (body.notes !== undefined) app.notes = body.notes
@@ -192,7 +220,8 @@ export class ApplicationsService {
       if ('past_leaving_reasons_text' in body.qa_snapshot) snap.past_leaving_reasons_text = body.qa_snapshot.past_leaving_reasons_text ?? null
       await this.qaRepo.save(snap)
     }
-    return saved
+    // Return hydrated application with relations for consistency with GET/POST
+    return this.getById(userId, id)
   }
 
   async transition(userId: string, id: string, body: { to_stage: ApplicationStage; reason?: string; admin_override?: boolean }) {
@@ -220,6 +249,22 @@ export class ApplicationsService {
   async getStageHistory(userId: string, id: string) {
     await this.getById(userId, id)
     return this.historyRepo.find({ where: { application_id: id }, order: { changed_at: 'DESC' } })
+  }
+
+  async delete(userId: string, id: string) {
+    // Ensure the application exists and belongs to the user
+    await this.getById(userId, id)
+    // Delete child/dependent rows first
+    await Promise.all([
+      this.compRepo.delete({ application_id: id }),
+      this.qaRepo.delete({ application_id: id }),
+      this.historyRepo.delete({ application_id: id }),
+      this.appContactRepo.delete({ application_id: id }),
+      this.convoRepo.delete({ application_id: id }),
+      this.interviewRepo.delete({ application_id: id }),
+    ])
+    // Finally delete the application
+    await this.appRepo.delete({ id, user_id: userId })
   }
 }
 

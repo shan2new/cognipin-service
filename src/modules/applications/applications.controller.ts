@@ -7,6 +7,7 @@ import {
   Post,
   Query,
   UseGuards,
+  Delete,
 } from '@nestjs/common'
 import { ClerkGuard } from '../auth/clerk.guard'
 import { ApplicationsService } from './applications.service'
@@ -84,7 +85,10 @@ export class ApplicationsController {
     @Param('id') id: string,
     @Body()
     body: Partial<{
+      company: { website_url?: string; company_id?: string }
+      company_id: string
       role: string
+      job_url: string | null
       platform_id: string | null
       source: string
       notes: string | null
@@ -114,6 +118,12 @@ export class ApplicationsController {
   @Get(':id/stage-history')
   async history(@CurrentUser() user: RequestUser, @Param('id') id: string) {
     return this.svc.getStageHistory(user.userId, id)
+  }
+
+  @Delete(':id')
+  async delete(@CurrentUser() user: RequestUser, @Param('id') id: string) {
+    await this.svc.delete(user.userId, id)
+    return { deleted: true, id }
   }
 }
 
