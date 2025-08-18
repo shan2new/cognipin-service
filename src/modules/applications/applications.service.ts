@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { Application, ApplicationStage } from '../../schema/application.entity'
 import { ApplicationCompensation } from '../../schema/application-compensation.entity'
+import { ApplicationNote } from '../../schema/application-note.entity'
 import { Company } from '../../schema/company.entity'
 import { deriveMilestone, canTransition } from '../../lib/stage-machine'
 import { computeCtc } from '../../lib/compensation'
@@ -22,6 +23,7 @@ export class ApplicationsService {
     @InjectRepository(StageHistory) private readonly historyRepo: Repository<StageHistory>,
     @InjectRepository(ApplicationQASnapshot) private readonly qaRepo: Repository<ApplicationQASnapshot>,
     @InjectRepository(ApplicationContact) private readonly appContactRepo: Repository<ApplicationContact>,
+    @InjectRepository(ApplicationNote) private readonly noteRepo: Repository<ApplicationNote>,
     @InjectRepository(Conversation) private readonly convoRepo: Repository<Conversation>,
     @InjectRepository(InterviewRound) private readonly interviewRepo: Repository<InterviewRound>,
   ) {}
@@ -31,6 +33,7 @@ export class ApplicationsService {
     qb.where('a.user_id = :userId', { userId })
     qb.leftJoinAndSelect('a.company', 'c')
     qb.leftJoinAndSelect('a.platform', 'p')
+    qb.leftJoinAndSelect('a.compensation', 'comp')
     // Basic filters (expand as needed)
     if (q.platform_id) {
       qb.andWhere('a.platform_id = :platform_id', { platform_id: q.platform_id })
@@ -262,9 +265,53 @@ export class ApplicationsService {
       this.appContactRepo.delete({ application_id: id }),
       this.convoRepo.delete({ application_id: id }),
       this.interviewRepo.delete({ application_id: id }),
+      this.noteRepo.delete({ application_id: id }),
     ])
     // Finally delete the application
     await this.appRepo.delete({ id, user_id: userId })
+  }
+  
+  // Application Notes methods
+  async createNote(userId: string, applicationId: string, content: string) {
+    // Verify the application exists and belongs to the user
+    await this.getById(userId, applicationId)
+    
+    const note = this.noteRepo.create({
+      application_id: applicationId,
+      user_id: userId,
+      content,
+    })
+    
+    // Update the application's last_activity_at timestamp
+    await this.appRepo.update(
+      { id: applicationId, user_id: userId },
+      { last_activity_at: new Date() }
+    )
+    
+    return this.noteRepo.save(note)
+  }
+  
+  async getNotes(userId: string, applicationId: string) {
+    // Verify the application exists and belongs to the user
+    await this.getById(userId, applicationId)
+    
+    // Return notes ordered by creation date (newest first)
+    return this.noteRepo.find({
+      where: { application_id: applicationId },
+      order: { created_at: 'DESC' }
+    })
+  }
+  
+  async deleteNote(userId: string, noteId: string) {
+    // Find the note
+    const note = await this.noteRepo.findOne({ where: { id: noteId } })
+    if (!note) throw new NotFoundException('Note not found')
+    
+    // Verify the application belongs to the user
+    await this.getById(userId, note.application_id)
+    
+    await this.noteRepo.delete({ id: noteId })
+    return { deleted: true, id: noteId }
   }
 }
 

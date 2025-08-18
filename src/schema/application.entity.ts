@@ -11,6 +11,7 @@ import {
 } from 'typeorm'
 import { Company } from './company.entity'
 import { Platform } from './platform.entity'
+import { ApplicationCompensation } from './application-compensation.entity'
 
 export type ApplicationSource = 'applied_self' | 'applied_referral' | 'recruiter_outreach'
 export type ApplicationMilestone = 'exploration' | 'interviewing' | 'post_interview'
@@ -109,6 +110,9 @@ export class Application {
 
   @Column({ type: 'text', nullable: true })
   resume_variant!: string | null
+
+  @OneToOne(() => ApplicationCompensation, (compensation) => compensation.application)
+  compensation?: ApplicationCompensation
 }
 
 

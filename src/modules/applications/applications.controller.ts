@@ -125,6 +125,26 @@ export class ApplicationsController {
     await this.svc.delete(user.userId, id)
     return { deleted: true, id }
   }
+
+  // Application Notes endpoints
+  @Get(':id/notes')
+  async getNotes(@CurrentUser() user: RequestUser, @Param('id') id: string) {
+    return this.svc.getNotes(user.userId, id)
+  }
+
+  @Post(':id/notes')
+  async createNote(
+    @CurrentUser() user: RequestUser,
+    @Param('id') id: string,
+    @Body() body: { content: string },
+  ) {
+    return this.svc.createNote(user.userId, id, body.content)
+  }
+
+  @Delete('notes/:noteId')
+  async deleteNote(@CurrentUser() user: RequestUser, @Param('noteId') noteId: string) {
+    return this.svc.deleteNote(user.userId, noteId)
+  }
 }
 
 
