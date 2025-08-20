@@ -16,35 +16,58 @@ export class ActivityService {
   ) {}
 
   async recomputeLastActivity(applicationId: string): Promise<void> {
-    const app = await this.appRepo.findOneOrFail({ where: { id: applicationId } })
-    const [conv, hist, roundSched, roundComp] = await Promise.all([
-      this.convRepo
-        .createQueryBuilder('c')
-        .select('MAX(c.occurred_at)', 'max')
-        .where('c.application_id = :id', { id: applicationId })
-        .getRawOne<{ max: Date | null }>(),
-      this.histRepo
-        .createQueryBuilder('h')
-        .select('MAX(h.changed_at)', 'max')
-        .where('h.application_id = :id', { id: applicationId })
-        .getRawOne<{ max: Date | null }>(),
-      this.roundRepo
-        .createQueryBuilder('r')
-        .select('MAX(r.scheduled_at)', 'max')
-        .where('r.application_id = :id', { id: applicationId })
-        .getRawOne<{ max: Date | null }>(),
-      this.roundRepo
-        .createQueryBuilder('r2')
-        .select('MAX(r2.completed_at)', 'max')
-        .where('r2.application_id = :id', { id: applicationId })
-        .getRawOne<{ max: Date | null }>(),
-    ])
+    try {
+      // Use a single query to get all the latest dates at once
+      const result = await this.appRepo
+        .createQueryBuilder('app')
+        .select([
+          'app.created_at as app_created',
+          'MAX(conv.occurred_at) as latest_conv',
+          'MAX(hist.changed_at) as latest_hist',
+          'MAX(round.scheduled_at) as latest_round_scheduled',
+          'MAX(round.completed_at) as latest_round_completed'
+        ])
+        .leftJoin('conversation', 'conv', 'conv.application_id = app.id')
+        .leftJoin('stage_history', 'hist', 'hist.application_id = app.id')
+        .leftJoin('interview_round', 'round', 'round.application_id = app.id')
+        .where('app.id = :applicationId', { applicationId })
+        .groupBy('app.id, app.created_at')
+        .getRawOne<{
+          app_created: Date
+          latest_conv: Date | null
+          latest_hist: Date | null
+          latest_round_scheduled: Date | null
+          latest_round_completed: Date | null
+        }>()
 
-    const dates = [app.created_at, conv?.max, hist?.max, roundSched?.max, roundComp?.max].filter(Boolean) as Date[]
-    const latest = dates.reduce((acc, d) => (acc > d ? acc : d))
-    if (app.last_activity_at.getTime() !== latest.getTime()) {
-      app.last_activity_at = latest
-      await this.appRepo.save(app)
+      if (!result) {
+        return // Application not found, skip update
+      }
+
+      // Find the latest date among all activities
+      const dates = [
+        result.app_created,
+        result.latest_conv,
+        result.latest_hist,
+        result.latest_round_scheduled,
+        result.latest_round_completed
+      ].filter(Boolean) as Date[]
+
+      if (dates.length === 0) {
+        return // No activity dates found
+      }
+
+      const latest = dates.reduce((acc, d) => (acc > d ? acc : d))
+
+      // Only update if the date has actually changed
+      const app = await this.appRepo.findOne({ where: { id: applicationId } })
+      if (app && app.last_activity_at.getTime() !== latest.getTime()) {
+        app.last_activity_at = latest
+        await this.appRepo.save(app)
+      }
+    } catch (error) {
+      // Log error but don't fail the conversation creation
+      console.error('Failed to recompute last activity for application:', applicationId, error)
     }
   }
 }

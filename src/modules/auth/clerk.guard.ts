@@ -16,20 +16,38 @@ export class ClerkGuard implements CanActivate {
     if (isPublic) return true
 
     const req = context.switchToHttp().getRequest()
-    const auth = req.headers['authorization'] as string | undefined
-    if (!auth || !auth.startsWith('Bearer ')) {
-      throw new UnauthorizedException('Missing bearer token')
+
+    // Prefer Authorization: Bearer <token>, fall back to Clerk session cookie
+    const auth = (req.headers['authorization'] as string | undefined) || ''
+    const bearer = auth.startsWith('Bearer ') ? auth.slice('Bearer '.length) : undefined
+    const cookieToken = (req.cookies && req.cookies['__session']) || undefined
+    const token = bearer || cookieToken
+
+    if (!token) {
+      throw new UnauthorizedException('Missing auth token')
     }
-    const token = auth.slice('Bearer '.length)
 
     try {
       const verified = await verifyToken(token, {
         secretKey: process.env.CLERK_SECRET_KEY!,
+        // Allow small clock skew per Clerk recommendation (tokens rotate frequently)
+        clockSkewInMs: 60_000,
       })
       req.user = { userId: verified.sub }
       return true
-    } catch (err) {
-      throw new UnauthorizedException('Invalid token')
+    } catch (err: any) {
+      // Map common verification errors to clearer messages
+      const name = err?.name || ''
+      if (name === 'TokenExpiredError') {
+        throw new UnauthorizedException('Token expired')
+      }
+      if (name === 'JsonWebTokenError') {
+        throw new UnauthorizedException('Invalid token')
+      }
+      if (name === 'NotBeforeError') {
+        throw new UnauthorizedException('Token not yet valid')
+      }
+      throw new UnauthorizedException('Authentication failed')
     }
   }
 }

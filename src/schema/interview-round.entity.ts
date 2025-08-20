@@ -2,6 +2,7 @@ import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm'
 
 export type InterviewRoundType = 'screen' | 'dsa' | 'system_design' | 'coding' | 'hm' | 'bar_raiser' | 'other'
 export type InterviewRoundResult = 'passed' | 'rejected' | 'no_show' | 'pending'
+export type InterviewRoundStatus = 'unscheduled' | 'scheduled' | 'rescheduled' | 'completed' | 'rejected' | 'withdrawn'
 export type InterviewRoundMode = 'online' | 'onsite'
 
 @Entity({ name: 'interview_round' })
@@ -15,11 +16,17 @@ export class InterviewRound {
   @Column('int')
   round_index!: number
 
+  @Column({ type: 'text', nullable: true })
+  custom_name!: string | null
+
   @Column({ type: 'enum', enumName: 'interview_round_type', enum: ['screen', 'dsa', 'system_design', 'coding', 'hm', 'bar_raiser', 'other'] })
   type!: InterviewRoundType
 
-  @Column({ type: 'timestamptz' })
-  scheduled_at!: Date
+  @Column({ type: 'enum', enumName: 'interview_round_status', enum: ['unscheduled', 'scheduled', 'rescheduled', 'completed', 'rejected', 'withdrawn'], default: 'unscheduled' })
+  status!: InterviewRoundStatus
+
+  @Column({ type: 'timestamptz', nullable: true })
+  scheduled_at!: Date | null
 
   @Column({ type: 'int', default: 0 })
   rescheduled_count!: number
@@ -36,7 +43,10 @@ export class InterviewRound {
   @Column({ type: 'text', nullable: true })
   feedback!: string | null
 
-  @Column({ type: 'enum', enumName: 'interview_round_mode', enum: ['online', 'onsite'] })
+  @Column({ type: 'text', nullable: true })
+  rejection_reason!: string | null
+
+  @Column({ type: 'enum', enumName: 'interview_round_mode', enum: ['online', 'onsite'], default: 'online' })
   mode!: InterviewRoundMode
 }
 

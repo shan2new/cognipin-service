@@ -77,7 +77,11 @@ export class ConversationsService {
       relations: ['contact']
     })
     
-    await this.activity.recomputeLastActivity(appId)
+    // Make activity recomputation asynchronous to prevent blocking
+    this.activity.recomputeLastActivity(appId).catch(error => {
+      console.error('Failed to recompute activity for conversation:', error)
+    })
+    
     return fullConv
   }
 }
