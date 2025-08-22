@@ -19,7 +19,7 @@ export class InterviewRound {
   @Column({ type: 'text', nullable: true })
   custom_name!: string | null
 
-  @Column({ type: 'enum', enumName: 'interview_round_type', enum: ['screen', 'dsa', 'system_design', 'coding', 'hm', 'bar_raiser', 'other'] })
+  @Column({ type: 'enum', enumName: 'interview_round_type', enum: ['screen', 'dsa', 'system_design', 'coding', 'hm', 'bar_raiser', 'other'], default: 'dsa' })
   type!: InterviewRoundType
 
   @Column({ type: 'enum', enumName: 'interview_round_status', enum: ['unscheduled', 'scheduled', 'rescheduled', 'completed', 'rejected', 'withdrawn'], default: 'unscheduled' })

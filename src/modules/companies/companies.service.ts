@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common'
+import { Injectable, Logger, NotFoundException } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { Company } from '../../schema/company.entity'
@@ -40,7 +40,9 @@ export class CompaniesService {
   }
 
   async getById(id: string) {
-    return this.repo.findOneOrFail({ where: { id } })
+    const company = await this.repo.findOne({ where: { id } })
+    if (!company) throw new NotFoundException('Company not found')
+    return company
   }
 
   async searchAndUpsert(query: string): Promise<Company[]> {

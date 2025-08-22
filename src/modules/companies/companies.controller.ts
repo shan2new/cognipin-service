@@ -36,6 +36,10 @@ export class CompaniesController {
     try {
       return await this.svc.searchAndUpsert(body.query.trim());
     } catch (error: any) {
+      if (error instanceof HttpException) {
+        // Preserve explicit HTTP errors like 404
+        throw error
+      }
       if (error?.message?.includes('Rate limit exceeded')) {
         throw new HttpException(
           'Rate limit exceeded. Please try again later.',
@@ -74,6 +78,10 @@ export class CompaniesController {
 
       return await this.roleSvc.suggestRoles(company, userCtx)
     } catch (error: any) {
+      if (error instanceof HttpException) {
+        // Preserve explicit HTTP errors like 404
+        throw error
+      }
       if (error?.message?.includes('Rate limit exceeded')) {
         throw new HttpException(
           'Rate limit exceeded. Please try again later.',

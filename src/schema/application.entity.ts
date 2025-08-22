@@ -14,24 +14,15 @@ import { Platform } from './platform.entity'
 import { ApplicationCompensation } from './application-compensation.entity'
 
 export type ApplicationSource = 'applied_self' | 'applied_referral' | 'recruiter_outreach'
-export type ApplicationMilestone = 'exploration' | 'interviewing' | 'post_interview'
+export type ApplicationMilestone = 'exploration' | 'screening' | 'interviewing' | 'post_interview'
 export type ApplicationStage =
-  | 'recruiter_outreach'
-  | 'applied_self'
-  | 'applied_referral'
-  | 'recruiter_discussion'
-  | 'pending_shortlist'
-  | 'interview_shortlist'
-  | 'interview_scheduled'
-  | 'interview_rescheduled'
-  | 'interview_completed'
-  | 'interview_passed'
-  | 'interview_rejected'
+  | 'wishlist'
+  | 'recruiter_reachout'
+  | 'self_review'
+  | 'hr_shortlist'
+  | 'hm_shortlist'
   | 'offer'
-  | 'rejected'
-  | 'on_hold'
-  | 'withdrawn'
-  | 'accepted'
+  | string // Allow dynamic interview round stages like 'interview_round_1', 'interview_round_2', etc.
 export type ApplicationStatus = 'active' | 'rejected' | 'offer' | 'accepted' | 'withdrawn' | 'on_hold'
 
 @Entity({ name: 'application' })
@@ -69,31 +60,10 @@ export class Application {
   @Column({ type: 'enum', enumName: 'application_source', enum: ['applied_self', 'applied_referral', 'recruiter_outreach'] })
   source!: ApplicationSource
 
-  @Column({ type: 'enum', enumName: 'application_milestone', enum: ['exploration', 'interviewing', 'post_interview'] })
+  @Column({ type: 'enum', enumName: 'application_milestone', enum: ['exploration', 'screening', 'interviewing', 'post_interview'] })
   milestone!: ApplicationMilestone
 
-  @Column({
-    type: 'enum',
-    enumName: 'application_stage',
-    enum: [
-      'recruiter_outreach',
-      'applied_self',
-      'applied_referral',
-      'recruiter_discussion',
-      'pending_shortlist',
-      'interview_shortlist',
-      'interview_scheduled',
-      'interview_rescheduled',
-      'interview_completed',
-      'interview_passed',
-      'interview_rejected',
-      'offer',
-      'rejected',
-      'on_hold',
-      'withdrawn',
-      'accepted',
-    ],
-  })
+  @Column({ type: 'text' })
   stage!: ApplicationStage
 
   @Column({ type: 'enum', enumName: 'application_status', enum: ['active', 'rejected', 'offer', 'accepted', 'withdrawn', 'on_hold'], default: 'active' })

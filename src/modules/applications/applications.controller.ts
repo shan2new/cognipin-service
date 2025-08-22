@@ -91,6 +91,7 @@ export class ApplicationsController {
       job_url: string | null
       platform_id: string | null
       source: string
+      stage: string | null;
       notes: string | null
       resume_variant: string | null
       compensation: { fixed_min_lpa?: number | null; fixed_max_lpa?: number | null; var_min_lpa?: number | null; var_max_lpa?: number | null; note?: string | null }

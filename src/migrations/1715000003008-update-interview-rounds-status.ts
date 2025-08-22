@@ -48,11 +48,11 @@ export class UpdateInterviewRoundsStatus1715000003008 implements MigrationInterf
     await queryRunner.query(`
       UPDATE "interview_round" 
       SET "status" = CASE 
-        WHEN "completed_at" IS NOT NULL THEN 'completed'
-        WHEN "result" = 'rejected' THEN 'rejected'
-        WHEN "scheduled_at" IS NOT NULL AND "rescheduled_count" > 0 THEN 'rescheduled'
-        WHEN "scheduled_at" IS NOT NULL THEN 'scheduled'
-        ELSE 'unscheduled'
+        WHEN "completed_at" IS NOT NULL THEN 'completed'::interview_round_status
+        WHEN "result" = 'rejected' THEN 'rejected'::interview_round_status
+        WHEN "scheduled_at" IS NOT NULL AND "rescheduled_count" > 0 THEN 'rescheduled'::interview_round_status
+        WHEN "scheduled_at" IS NOT NULL THEN 'scheduled'::interview_round_status
+        ELSE 'unscheduled'::interview_round_status
       END
     `)
   }

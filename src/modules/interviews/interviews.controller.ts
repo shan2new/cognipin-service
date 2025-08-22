@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Put, UseGuards } from '@nestjs/common'
+import { Body, Controller, Get, Param, Post, Put, Delete, UseGuards } from '@nestjs/common'
 import { ClerkGuard } from '../auth/clerk.guard'
 import { CurrentUser, RequestUser } from '../auth/current-user.decorator'
 import { InterviewsService } from './interviews.service'
@@ -70,6 +70,34 @@ export class InterviewsController {
     @Body() body: { custom_name: string },
   ) {
     return this.svc.updateName(user.userId, appId, roundId, body)
+  }
+
+  @Put(':roundId/type')
+  async updateType(
+    @CurrentUser() user: RequestUser,
+    @Param('id') appId: string,
+    @Param('roundId') roundId: string,
+    @Body() body: { type: string },
+  ) {
+    return this.svc.updateType(user.userId, appId, roundId, body)
+  }
+
+  @Put('reorder')
+  async reorderRounds(
+    @CurrentUser() user: RequestUser,
+    @Param('id') appId: string,
+    @Body() body: { round_ids: string[] },
+  ) {
+    return this.svc.reorderRounds(user.userId, appId, body)
+  }
+
+  @Delete(':roundId')
+  async deleteRound(
+    @CurrentUser() user: RequestUser,
+    @Param('id') appId: string,
+    @Param('roundId') roundId: string,
+  ) {
+    return this.svc.deleteRound(user.userId, appId, roundId)
   }
 }
 

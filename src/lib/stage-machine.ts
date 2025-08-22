@@ -1,45 +1,60 @@
 import { ApplicationMilestone, ApplicationStage } from '../schema/application.entity'
 
 const exploration: ApplicationStage[] = [
-  'recruiter_outreach',
-  'applied_self',
-  'applied_referral',
-  'recruiter_discussion',
-  'pending_shortlist',
-  'interview_shortlist',
+  'wishlist',
+  'recruiter_reachout',
+  'self_review',
 ]
-const interviewing: ApplicationStage[] = [
-  'interview_scheduled',
-  'interview_rescheduled',
-  'interview_completed',
-  'interview_passed',
-  'interview_rejected',
+const screening: ApplicationStage[] = [
+  'hr_shortlist',
+  'hm_shortlist',
 ]
-const postInterview: ApplicationStage[] = ['offer', 'rejected', 'on_hold', 'withdrawn', 'accepted']
+const postInterview: ApplicationStage[] = ['offer']
+
+// Helper function to check if a stage is an interview round
+export function isInterviewRoundStage(stage: ApplicationStage): boolean {
+  return typeof stage === 'string' && stage.startsWith('interview_round_')
+}
 
 export function deriveMilestone(stage: ApplicationStage): ApplicationMilestone {
   if (exploration.includes(stage)) return 'exploration'
-  if (interviewing.includes(stage)) return 'interviewing'
-  return 'post_interview'
+  if (screening.includes(stage)) return 'screening'
+  if (isInterviewRoundStage(stage)) return 'interviewing'
+  if (stage === 'offer') return 'post_interview'
+  return 'exploration' // Default fallback
 }
 
 export function canTransition(from: ApplicationStage, to: ApplicationStage, adminOverride = false): boolean {
-  if (adminOverride) return true
-  // lateral within exploration
-  if (exploration.includes(from) && exploration.includes(to)) return true
+  return true;
+}
 
-  if (from === 'interview_shortlist' && to === 'interview_scheduled') return true
-  if (from === 'interview_scheduled' && to === 'interview_rescheduled') return true
-  if ((from === 'interview_scheduled' || from === 'interview_rescheduled') && to === 'interview_completed') return true
-  if (from === 'interview_completed' && (to === 'interview_passed' || to === 'interview_rejected')) return true
-  if (from === 'interview_passed' && (to === 'offer' || to === 'interview_scheduled')) return true
-  if (
-    interviewing.includes(from) &&
-    (to === 'rejected' || to === 'on_hold' || to === 'withdrawn')
-  )
-    return true
+export function getNextStage(currentStage: ApplicationStage): ApplicationStage | null {
+  switch (currentStage) {
+    case 'wishlist':
+      return 'recruiter_reachout'
+    case 'recruiter_reachout':
+      return 'self_review'
+    case 'self_review':
+      return 'hr_shortlist'
+    case 'hr_shortlist':
+      return 'hm_shortlist'
+    case 'hm_shortlist':
+      return 'interview_round_1' // After screening, move to first interview round
+    case 'offer':
+      return null // Final stage
+    default:
+      // Handle interview round progression
+      if (isInterviewRoundStage(currentStage)) {
+        // For interview rounds, the next stage would be determined by the application logic
+        // This could be the next interview round or offer stage
+        return null // Let application service determine next interview round or offer
+      }
+      return null
+  }
+}
 
-  return false
+export function getStageOrder(): ApplicationStage[] {
+  return ['wishlist', 'recruiter_reachout', 'self_review', 'hr_shortlist', 'hm_shortlist', 'offer']
 }
 
 

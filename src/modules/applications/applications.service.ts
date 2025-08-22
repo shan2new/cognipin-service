@@ -1,18 +1,21 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common'
+import { Injectable, BadRequestException, UnauthorizedException, NotFoundException } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
-import { Repository } from 'typeorm'
-import { Application, ApplicationStage } from '../../schema/application.entity'
-import { ApplicationCompensation } from '../../schema/application-compensation.entity'
-import { ApplicationNote } from '../../schema/application-note.entity'
+import { Brackets, Repository } from 'typeorm'
+
+import { Application, ApplicationMilestone, ApplicationStage } from '../../schema/application.entity'
 import { Company } from '../../schema/company.entity'
-import { deriveMilestone, canTransition } from '../../lib/stage-machine'
-import { computeCtc } from '../../lib/compensation'
-import { fetchMetadata } from '../../lib/metadata-fetcher'
+import { Platform } from '../../schema/platform.entity'
 import { StageHistory } from '../../schema/stage-history.entity'
 import { ApplicationQASnapshot } from '../../schema/application-qa-snapshot.entity'
 import { ApplicationContact } from '../../schema/application-contact.entity'
+import { ApplicationCompensation } from '../../schema/application-compensation.entity'
+import { ApplicationNote } from '../../schema/application-note.entity'
 import { Conversation } from '../../schema/conversation.entity'
 import { InterviewRound } from '../../schema/interview-round.entity'
+import { canTransition, deriveMilestone, isInterviewRoundStage } from '../../lib/stage-machine'
+import { StageObject } from '../../schema/application-stage.dto'
+import { computeCtc } from '../../lib/compensation'
+import { fetchMetadata } from '../../lib/metadata-fetcher'
 
 @Injectable()
 export class ApplicationsService {
@@ -27,6 +30,53 @@ export class ApplicationsService {
     @InjectRepository(Conversation) private readonly convoRepo: Repository<Conversation>,
     @InjectRepository(InterviewRound) private readonly interviewRepo: Repository<InterviewRound>,
   ) {}
+
+  private async formatStageAsObject(stage: ApplicationStage, applicationId: string): Promise<StageObject> {
+    if (isInterviewRoundStage(stage)) {
+      // For interview round stages, fetch interview data
+      const interviewRounds = await this.interviewRepo.find({
+        where: { application_id: applicationId },
+        order: { round_index: 'ASC' }
+      })
+      
+      // Extract round number from stage (e.g., 'interview_round_1' -> 1)
+      const match = stage.match(/interview_round_(\d+)/)
+      const roundNumber = match ? parseInt(match[1]) : 1
+      const interviewRound = interviewRounds[roundNumber - 1] // 0-indexed array
+      
+      return {
+        id: stage,
+        name: `Interview Round ${roundNumber}`,
+        type: 'interview_round',
+        interview_round_number: roundNumber,
+        interview_data: interviewRound ? {
+          type: interviewRound.type,
+          custom_name: interviewRound.custom_name || undefined,
+          status: interviewRound.status,
+          scheduled_at: interviewRound.scheduled_at?.toISOString(),
+          completed_at: interviewRound.completed_at?.toISOString(),
+          result: interviewRound.result || undefined,
+          rejection_reason: interviewRound.rejection_reason || undefined,
+        } : undefined
+      }
+    } else {
+      // For standard stages, create a simple stage object
+      const stageNames: Record<string, string> = {
+        'wishlist': 'Wishlist',
+        'recruiter_reachout': 'Recruiter Reachout', 
+        'self_review': 'Self Review',
+        'hr_shortlist': 'HR Shortlist',
+        'hm_shortlist': 'Manager Shortlist',
+        'offer': 'Offer'
+      }
+      
+      return {
+        id: stage,
+        name: stageNames[stage] || stage,
+        type: 'standard'
+      }
+    }
+  }
 
   async list(userId: string, q: Record<string, string | undefined>) {
     const qb = this.appRepo.createQueryBuilder('a')
@@ -61,8 +111,16 @@ export class ApplicationsService {
     // Ensure ordering by last activity desc default
     qb.orderBy('a.last_activity_at', 'DESC')
     const apps = await qb.getMany()
-    // Minimal derive placeholder; return as-is including selected relations
-    return apps
+    
+    // Format stages as objects for all applications
+    const formattedApps = await Promise.all(
+      apps.map(async (app) => ({
+        ...app,
+        stage: await this.formatStageAsObject(app.stage, app.id)
+      }))
+    )
+    
+    return formattedApps
   }
 
   async ensureCompany(companyInput: { website_url?: string; company_id?: string }): Promise<Company> {
@@ -105,7 +163,7 @@ export class ApplicationsService {
   ) {
     const company = await this.ensureCompany(body.company)
     const stage: ApplicationStage =
-      body.source === 'applied_self' ? 'applied_self' : body.source === 'applied_referral' ? 'applied_referral' : 'recruiter_outreach'
+      body.source === 'applied_self' ? 'self_review' : body.source === 'applied_referral' ? 'self_review' : 'recruiter_reachout'
     const milestone = deriveMilestone(stage)
     const now = new Date()
     const app = this.appRepo.create({
@@ -149,11 +207,12 @@ export class ApplicationsService {
     // Load company/platform relations to keep API responses consistent
     const app = await this.appRepo.findOne({ where: { id, user_id: userId }, relations: ['company', 'platform'] })
     if (!app) throw new NotFoundException('Application not found')
-    const [comp, qa] = await Promise.all([
+    const [comp, qa, stageObject] = await Promise.all([
       this.compRepo.findOne({ where: { application_id: id } }),
       this.qaRepo.findOne({ where: { application_id: id } }),
+      this.formatStageAsObject(app.stage, app.id)
     ])
-    return { ...app, compensation: comp ?? null, qa_snapshot: qa ?? null }
+    return { ...app, stage: stageObject, compensation: comp ?? null, qa_snapshot: qa ?? null }
   }
 
   async update(
@@ -166,6 +225,7 @@ export class ApplicationsService {
       job_url: string | null
       platform_id: string | null
       source: string
+      stage: string | null
       notes: string | null
       resume_variant: string | null
       compensation: { fixed_min_lpa?: number | null; fixed_max_lpa?: number | null; var_min_lpa?: number | null; var_max_lpa?: number | null; note?: string | null }
@@ -199,6 +259,7 @@ export class ApplicationsService {
     if ('job_url' in body) app.job_url = body.job_url ?? null
     if (body.platform_id !== undefined) app.platform_id = body.platform_id
     if (body.source !== undefined) app.source = body.source as any
+    if (body.stage !== undefined) app.stage = body.stage as any
     if (body.notes !== undefined) app.notes = body.notes
     if (body.resume_variant !== undefined) app.resume_variant = body.resume_variant
     const saved = await this.appRepo.save(app)
@@ -228,10 +289,14 @@ export class ApplicationsService {
   }
 
   async transition(userId: string, id: string, body: { to_stage: ApplicationStage; reason?: string; admin_override?: boolean }) {
-    const app = await this.getById(userId, id)
+    // Get the raw application entity (with string stage) for database operations
+    const app = await this.appRepo.findOne({ where: { id, user_id: userId } })
+    if (!app) throw new NotFoundException('Application not found')
+    
     if (!canTransition(app.stage, body.to_stage, body.admin_override)) {
       throw new BadRequestException('Invalid stage transition')
     }
+    
     const from = app.stage
     app.stage = body.to_stage
     app.milestone = deriveMilestone(app.stage)
@@ -246,7 +311,9 @@ export class ApplicationsService {
         by: 'user',
       }),
     )
-    return saved
+    
+    // Return formatted response with stage object
+    return this.getById(userId, id)
   }
 
   async getStageHistory(userId: string, id: string) {
