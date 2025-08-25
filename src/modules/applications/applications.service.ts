@@ -35,16 +35,13 @@ export class ApplicationsService {
 
   private async formatStageAsObject(stage: ApplicationStage, applicationId: string): Promise<StageObject> {
     if (isInterviewRoundStage(stage)) {
-      // For interview round stages, fetch interview data
-      const interviewRounds = await this.interviewRepo.find({
-        where: { application_id: applicationId },
-        order: { round_index: 'ASC' }
-      })
-      
       // Extract round number from stage (e.g., 'interview_round_1' -> 1)
       const match = stage.match(/interview_round_(\d+)/)
       const roundNumber = match ? parseInt(match[1]) : 1
-      const interviewRound = interviewRounds[roundNumber - 1] // 0-indexed array
+      // Fetch only the specific interview round using the composite index (application_id, round_index)
+      const interviewRound = await this.interviewRepo.findOne({
+        where: { application_id: applicationId, round_index: roundNumber },
+      })
       
       return {
         id: stage,

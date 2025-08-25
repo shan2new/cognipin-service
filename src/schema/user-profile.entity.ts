@@ -1,5 +1,6 @@
 import { Column, Entity, PrimaryGeneratedColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm'
 import { Company } from './company.entity'
+import { Role } from './role.entity'
 
 @Entity({ name: 'user_profile' })
 export class UserProfile {
@@ -20,6 +21,14 @@ export class UserProfile {
 
   @Column('text', { nullable: true })
   current_role!: string | null
+
+  // Reference to canonical role entity (optional)
+  @Column({ type: 'uuid', nullable: true })
+  current_role_id!: string | null
+
+  @ManyToOne(() => Role)
+  @JoinColumn({ name: 'current_role_id' })
+  role?: Role | null
 
   @Column('text', { nullable: true })
   current_company!: string | null

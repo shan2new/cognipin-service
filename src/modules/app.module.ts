@@ -18,6 +18,7 @@ import { ReferrersModule } from './referrers/referrers.module'
 import { ResumesModule } from './resumes/resumes.module'
 import ormConfig from '../ormconfig'
 import { AppController } from '../app.controller'
+import { RolesModule } from './roles/roles.module'
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { AppController } from '../app.controller'
     AnalyticsModule,
     ReferrersModule,
     ResumesModule,
+    RolesModule,
   ],
   controllers: [AppController],
 })
