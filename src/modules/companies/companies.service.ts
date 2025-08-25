@@ -1,10 +1,11 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common'
+import { Injectable, Logger, NotFoundException, Inject } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { Company } from '../../schema/company.entity'
 import { fetchMetadata } from '../../lib/metadata-fetcher'
 import { CompanySearchService } from '../../lib/ai/company-search.service'
-import { CompanySearchResult } from '../../lib/ai/interfaces'
+import { CompanySearchResult, LogoDownloader } from '../../lib/ai/interfaces'
+import { R2StorageService } from '../../lib/r2-storage.service'
 
 @Injectable()
 export class CompaniesService {
@@ -13,6 +14,8 @@ export class CompaniesService {
   constructor(
     @InjectRepository(Company) private readonly repo: Repository<Company>,
     private readonly companySearchService: CompanySearchService,
+    private readonly r2: R2StorageService,
+    @Inject('LOGO_DOWNLOADER') private readonly logoDownloader: LogoDownloader,
   ) {}
 
   async list(search?: string) {
@@ -25,16 +28,23 @@ export class CompaniesService {
   }
 
   async upsertByWebsite(websiteUrl: string) {
-    const { canonicalHost, name, logoBase64 } = await fetchMetadata(websiteUrl)
+    const { canonicalHost, name } = await fetchMetadata(websiteUrl)
     let company = await this.repo.findOne({ where: { website_url: canonicalHost } })
     if (!company) {
       company = this.repo.create({ website_url: canonicalHost, name: name || canonicalHost })
     } else if (name && !company.name) {
       company.name = name
     }
-    // Always refresh logo when a new one is available (keeps it lazily fresh)
-    if (logoBase64 && logoBase64 !== company.logo_blob_base64) {
-      company.logo_blob_base64 = logoBase64
+    // Always replace logo using the LogoDownloader and overwrite in R2 when available
+    try {
+      const host = (() => { try { return new URL(canonicalHost).hostname } catch { return canonicalHost.replace(/^https?:\/\//, '') } })()
+      const downloaded = await this.logoDownloader.downloadLogo(host)
+      if (downloaded) {
+        const keyPrefix = `logos/company/${host}/logo`
+        company.logo_url = await this.r2.uploadBase64Image(downloaded, keyPrefix)
+      }
+    } catch (e) {
+      this.logger.warn(`Failed to replace logo for ${canonicalHost}: ${e}`)
     }
     return this.repo.save(company)
   }
@@ -46,16 +56,13 @@ export class CompaniesService {
   }
 
   async searchAndUpsert(query: string): Promise<Company[]> {
-    // First, try to find existing companies in the database
+    // Look up existing companies, but always proceed with AI search to refresh logos
     const existingCompanies = await this.findExistingCompanies(query);
-    
     if (existingCompanies.length > 0) {
-      this.logger.log(`Found ${existingCompanies.length} existing companies for query: "${query}"`);
-      return existingCompanies;
+      this.logger.log(`Found ${existingCompanies.length} existing companies for query: "${query}". Refreshing via AI to replace logos.`);
     }
 
-    // If no existing companies found, search using AI and store them
-    this.logger.log(`No existing companies found for query: "${query}", searching with AI...`);
+    this.logger.log(`Searching with AI for query: "${query}" to ensure logos are refreshed...`);
     const searchResults = await this.companySearchService.searchCompanies(query);
     
     if (!searchResults || searchResults.length === 0) {
@@ -117,8 +124,16 @@ export class CompaniesService {
           ticker: result.ticker,
           sources: result.sources,
           confidence: result.confidence,
-          logo_blob_base64: result.logoBase64,
         });
+        if (result.logoBase64) {
+          try {
+            const host = (result.domain && result.domain.trim()) ? result.domain.trim() : new URL(result.websiteUrl).hostname
+            const keyPrefix = `logos/company/${host}/logo`
+            company.logo_url = await this.r2.uploadBase64Image(result.logoBase64, keyPrefix)
+          } catch (e) {
+            this.logger.warn(`Failed to upload company logo to R2 for ${result.websiteUrl}: ${e}`)
+          }
+        }
       } else {
         // Update existing company with new data if available
         if (result.name && result.name !== company.name) company.name = result.name;
@@ -150,8 +165,15 @@ export class CompaniesService {
         if (result.sources) company.sources = result.sources;
         if (result.confidence !== undefined && result.confidence !== company.confidence) 
           company.confidence = result.confidence;
-        if (result.logoBase64 && result.logoBase64 !== company.logo_blob_base64) 
-          company.logo_blob_base64 = result.logoBase64;
+        if (result.logoBase64) {
+            try {
+            const host = (result.domain && result.domain.trim()) ? result.domain.trim() : new URL(result.websiteUrl).hostname
+            const keyPrefix = `logos/company/${host}/logo`
+            company.logo_url = await this.r2.uploadBase64Image(result.logoBase64, keyPrefix)
+          } catch (e) {
+            this.logger.warn(`Failed to upload updated company logo to R2 for ${result.websiteUrl}: ${e}`)
+          }
+        }
       }
 
       return await this.repo.save(company);

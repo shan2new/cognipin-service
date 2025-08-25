@@ -32,6 +32,7 @@ export class ProfileService {
       current_company_id?: string | null
       persona?: 'student' | 'intern' | 'professional' | null
       persona_info?: any | null
+      linkedin_url?: string | null
     },
   ) {
     const p = await this.get(userId)
@@ -43,6 +44,7 @@ export class ProfileService {
     if (body.current_company_id !== undefined) p.current_company_id = body.current_company_id as any
     if (body.persona !== undefined) p.persona = body.persona as any
     if (body.persona_info !== undefined) p.persona_info = body.persona_info as any
+    if (body.linkedin_url !== undefined) p.linkedin_url = body.linkedin_url as any
     await this.repo.save(p)
     return this.get(userId)
   }

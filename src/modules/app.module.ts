@@ -15,6 +15,7 @@ import { ProfileModule } from './profile/profile.module'
 import { RecruiterQAModule } from './recruiter-qa/recruiter-qa.module'
 import { AnalyticsModule } from './analytics/analytics.module'
 import { ReferrersModule } from './referrers/referrers.module'
+import { ResumesModule } from './resumes/resumes.module'
 import ormConfig from '../ormconfig'
 import { AppController } from '../app.controller'
 
@@ -44,10 +45,8 @@ import { AppController } from '../app.controller'
     RecruiterQAModule,
     AnalyticsModule,
     ReferrersModule,
+    ResumesModule,
   ],
   controllers: [AppController],
 })
 export class AppModule {}
-
-
-

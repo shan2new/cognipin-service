@@ -10,6 +10,7 @@ import { TokenBucketRateLimiter } from '../../lib/ai/rate-limiter'
 import { ClearbitLogoDownloader } from '../../lib/ai/logo-downloader'
 import { RoleSuggestionService } from '../../lib/ai/role-suggestion.service'
 import { ProfileModule } from '../profile/profile.module'
+import { R2StorageService } from '../../lib/r2-storage.service'
 
 @Module({
   imports: [TypeOrmModule.forFeature([Company]), ConfigModule, ProfileModule],
@@ -18,6 +19,7 @@ import { ProfileModule } from '../profile/profile.module'
     CompaniesService,
     CompanySearchService,
     RoleSuggestionService,
+    R2StorageService,
     {
       provide: 'AI_PROVIDER',
       useFactory: (configService: ConfigService) => {

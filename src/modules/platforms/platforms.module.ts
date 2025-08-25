@@ -8,6 +8,7 @@ import { PlatformSearchService } from '../../lib/ai/platform-search.service'
 import { HybridFallbackProvider } from '../../lib/ai/hybrid-fallback-provider'
 import { TokenBucketRateLimiter } from '../../lib/ai/rate-limiter'
 import { ClearbitLogoDownloader } from '../../lib/ai/logo-downloader'
+import { R2StorageService } from '../../lib/r2-storage.service'
 
 @Module({
   imports: [TypeOrmModule.forFeature([Platform]), ConfigModule],
@@ -15,6 +16,7 @@ import { ClearbitLogoDownloader } from '../../lib/ai/logo-downloader'
   providers: [
     PlatformsService,
     PlatformSearchService,
+    R2StorageService,
     {
       provide: 'AI_PROVIDER',
       useFactory: (configService: ConfigService) => {

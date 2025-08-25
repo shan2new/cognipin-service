@@ -16,6 +16,7 @@ import { canTransition, deriveMilestone, isInterviewRoundStage } from '../../lib
 import { StageObject } from '../../schema/application-stage.dto'
 import { computeCtc } from '../../lib/compensation'
 import { fetchMetadata } from '../../lib/metadata-fetcher'
+import { R2StorageService } from '../../lib/r2-storage.service'
 
 @Injectable()
 export class ApplicationsService {
@@ -29,6 +30,7 @@ export class ApplicationsService {
     @InjectRepository(ApplicationNote) private readonly noteRepo: Repository<ApplicationNote>,
     @InjectRepository(Conversation) private readonly convoRepo: Repository<Conversation>,
     @InjectRepository(InterviewRound) private readonly interviewRepo: Repository<InterviewRound>,
+    private readonly r2: R2StorageService,
   ) {}
 
   private async formatStageAsObject(stage: ApplicationStage, applicationId: string): Promise<StageObject> {
@@ -134,11 +136,28 @@ export class ApplicationsService {
     const meta = await fetchMetadata(companyInput.website_url)
     let c = await this.companyRepo.findOne({ where: { website_url: meta.canonicalHost } })
     if (!c) {
-      c = this.companyRepo.create({ website_url: meta.canonicalHost, name: meta.name || meta.canonicalHost, logo_blob_base64: meta.logoBase64 })
+      c = this.companyRepo.create({ website_url: meta.canonicalHost, name: meta.name || meta.canonicalHost })
+      if (meta.logoBase64) {
+        try {
+          const host = (() => { try { return new URL(meta.canonicalHost).hostname } catch { return meta.canonicalHost.replace(/^https?:\/\//, '') } })()
+          const keyPrefix = `logos/company/${host}/logo`
+          c.logo_url = await this.r2.uploadBase64Image(meta.logoBase64, keyPrefix)
+        } catch (e) {
+          // non-blocking
+        }
+      }
     } else {
       if (meta.name && !c.name) c.name = meta.name
-      // Always refresh logo when a new one is available to keep it lazily fresh
-      if (meta.logoBase64 && meta.logoBase64 !== c.logo_blob_base64) c.logo_blob_base64 = meta.logoBase64
+      // Always replace logo and overwrite in R2 whenever base64 is present
+      if (meta.logoBase64) {
+        try {
+          const host = (() => { try { return new URL(meta.canonicalHost).hostname } catch { return meta.canonicalHost.replace(/^https?:\/\//, '') } })()
+          const keyPrefix = `logos/company/${host}/logo`
+          c.logo_url = await this.r2.uploadBase64Image(meta.logoBase64, keyPrefix)
+        } catch (e) {
+          // non-blocking
+        }
+      }
     }
     return this.companyRepo.save(c)
   }

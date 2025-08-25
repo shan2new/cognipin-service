@@ -12,7 +12,7 @@ export class Company {
   name!: string
 
   @Column({ type: 'text', nullable: true })
-  logo_blob_base64!: string | null
+  logo_url!: string | null
 
   @Column({ type: 'text', nullable: true })
   domain!: string | null

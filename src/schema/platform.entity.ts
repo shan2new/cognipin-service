@@ -12,7 +12,7 @@ export class Platform {
   url!: string
 
   @Column({ type: 'text', nullable: true })
-  logo_blob_base64!: string | null
+  logo_url!: string | null
 
   @CreateDateColumn({ type: 'timestamptz' })
   created_at!: Date

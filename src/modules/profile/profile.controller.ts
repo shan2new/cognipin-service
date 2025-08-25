@@ -26,10 +26,12 @@ export class ProfileController {
       current_company_id?: string | null
       persona?: 'student' | 'intern' | 'professional' | null
       persona_info?: any | null
+      linkedin_url?: string | null
     },
   ) {
     return this.svc.update(user.userId, body)
   }
+
 }
 
 

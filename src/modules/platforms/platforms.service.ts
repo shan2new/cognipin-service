@@ -4,6 +4,7 @@ import { Repository } from 'typeorm'
 import { Platform } from '../../schema/platform.entity'
 import { fetchMetadata } from '../../lib/metadata-fetcher'
 import { PlatformSearchService } from '../../lib/ai/platform-search.service'
+import { R2StorageService } from '../../lib/r2-storage.service'
 
 @Injectable()
 export class PlatformsService {
@@ -12,6 +13,7 @@ export class PlatformsService {
   constructor(
     @InjectRepository(Platform) private readonly repo: Repository<Platform>,
     private readonly platformSearchService: PlatformSearchService,
+    private readonly r2: R2StorageService,
   ) {}
 
   async list() {
@@ -26,9 +28,15 @@ export class PlatformsService {
     } else if (name && platform.name !== name) {
       platform.name = name
     }
-    // Always refresh logo when a new one is available
-    if (logoBase64 && logoBase64 !== platform.logo_blob_base64) {
-      platform.logo_blob_base64 = logoBase64
+    // Always replace logo and overwrite in R2 when available
+    if (logoBase64) {
+      try {
+        const host = new URL(canonicalHost).hostname
+        const keyPrefix = `logos/platform/${host}/logo`
+        platform.logo_url = await this.r2.uploadBase64Image(logoBase64, keyPrefix)
+      } catch (e) {
+        this.logger.warn(`Failed to upload platform logo to R2 for ${canonicalHost}: ${e}`)
+      }
     }
     return this.repo.save(platform)
   }
@@ -43,11 +51,10 @@ export class PlatformsService {
       .getMany()
 
     if (existing.length > 0) {
-      this.logger.log(`Found ${existing.length} existing platforms for query: "${query}"`)
-      return existing
+      this.logger.log(`Found ${existing.length} existing platforms for query: "${query}". Proceeding with AI search to refresh logos.`)
     }
 
-    this.logger.log(`No existing platforms found for "${query}". Using AI search...`)
+    this.logger.log(`Searching with AI for "${query}" to ensure logos are refreshed...`)
     const results = await this.platformSearchService.searchPlatforms(query)
     if (!results || results.length === 0) return []
 
@@ -65,13 +72,30 @@ export class PlatformsService {
         platform = this.repo.create({
           url: canonicalHost,
           name: result.name || derived || canonicalHost,
-          logo_blob_base64: result.logoBase64 ?? metaLogo ?? null,
         })
+        const base64 = result.logoBase64 ?? metaLogo ?? null
+        if (base64) {
+          try {
+            const host = new URL(canonicalHost).hostname
+            const keyPrefix = `logos/platform/${host}/logo`
+            platform.logo_url = await this.r2.uploadBase64Image(base64, keyPrefix)
+          } catch (e) {
+            this.logger.warn(`Failed to upload platform logo to R2 for ${canonicalHost}: ${e}`)
+          }
+        }
       } else {
         const nextName = result.name || derived
         if (nextName && platform.name !== nextName) platform.name = nextName
         const nextLogo = result.logoBase64 ?? metaLogo ?? null
-        if (nextLogo && nextLogo !== platform.logo_blob_base64) platform.logo_blob_base64 = nextLogo
+        if (nextLogo) {
+          try {
+            const host = new URL(canonicalHost).hostname
+            const keyPrefix = `logos/platform/${host}/logo`
+            platform.logo_url = await this.r2.uploadBase64Image(nextLogo, keyPrefix)
+          } catch (e) {
+            this.logger.warn(`Failed to upload updated platform logo to R2 for ${canonicalHost}: ${e}`)
+          }
+        }
       }
 
       return await this.repo.save(platform)

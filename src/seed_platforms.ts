@@ -7,7 +7,6 @@ interface Platform {
   id: string
   name: string
   url: string
-  logo_blob_base64: string | null
   created_at: Date
   updated_at: Date
 }
@@ -18,7 +17,6 @@ const PlatformEntity = new EntitySchema<Platform>({
     id: { type: 'uuid', primary: true, generated: 'uuid' },
     name: { type: 'text' },
     url: { type: 'text', unique: true },
-    logo_blob_base64: { type: 'text', nullable: true },
     created_at: { type: 'timestamptz', createDate: true },
     updated_at: { type: 'timestamptz', updateDate: true },
   },

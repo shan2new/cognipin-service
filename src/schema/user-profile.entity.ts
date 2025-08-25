@@ -43,6 +43,10 @@ export class UserProfile {
   @Column({ type: 'jsonb', nullable: true })
   persona_info!: any | null
 
+  // Public profile link for personalization and enrichment
+  @Column('text', { nullable: true })
+  linkedin_url!: string | null
+
   @UpdateDateColumn({ type: 'timestamptz' })
   updated_at!: Date
 }

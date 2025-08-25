@@ -3,6 +3,7 @@ import { setTimeout as delay } from 'node:timers/promises'
 export type FetchedMeta = {
   name: string | null
   logoBase64: string | null
+  logoUrl: string | null
   canonicalHost: string // scheme+host lowercased w/o www
 }
 
@@ -127,7 +128,7 @@ export async function fetchMetadata(rawUrl: string): Promise<FetchedMeta> {
   const name = deriveNameFromHead(head) || canonUrl.hostname
   const logoUrl = preferLogoUrl(head, canonUrl)
   const logoBase64 = logoUrl ? await fetchAsBase64(logoUrl) : null
-  return { name, logoBase64, canonicalHost: canon }
+  return { name, logoBase64, logoUrl, canonicalHost: canon }
 }
 
 
