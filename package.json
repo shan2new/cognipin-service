@@ -16,7 +16,11 @@
     "migration:run": "ts-node ./node_modules/typeorm/cli.js migration:run -d src/data-source.ts",
     "migration:revert": "ts-node ./node_modules/typeorm/cli.js migration:revert -d src/data-source.ts",
     "backfill:logos": "ts-node src/scripts/backfill-logos-to-r2.ts",
-    "backfill:logos:dry": "ts-node src/scripts/backfill-logos-to-r2.ts -- --dry-run"
+    "backfill:logos:dry": "ts-node src/scripts/backfill-logos-to-r2.ts -- --dry-run",
+    "fetch:roles": "ts-node src/scripts/fetch-software-engineer-roles.ts",
+    "fetch:tech-roles": "ts-node src/scripts/fetch-tech-roles.ts",
+    "roles:clean": "ts-node src/scripts/clean-tech-roles.ts",
+    "roles:push": "ts-node src/scripts/push-roles.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.873.0",
@@ -31,6 +35,7 @@
     "class-validator": "^0.14.1",
     "docx": "^9.5.1",
     "openai": "^5.12.2",
+    "@openrouter/api": "^1.10.0",
     "pg": "^8.12.0",
     "puppeteer": "^24.17.0",
     "reflect-metadata": "^0.2.2",

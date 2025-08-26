@@ -5,10 +5,11 @@ import { RoleGroup } from '../../schema/role-group.entity'
 import { UserProfile } from '../../schema/user-profile.entity'
 import { RolesService } from './roles.service'
 import { RolesController } from './roles.controller'
+import { ElasticsearchService } from '../../lib/elasticsearch.service'
 
 @Module({
   imports: [TypeOrmModule.forFeature([Role, RoleGroup, UserProfile])],
-  providers: [RolesService],
+  providers: [RolesService, ElasticsearchService],
   controllers: [RolesController],
   exports: [RolesService],
 })

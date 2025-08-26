@@ -1,4 +1,4 @@
-const { tavily } = require('@tavily/core');
+import { tavily } from '@tavily/core';
 
 export interface TavilySearchResult {
   title: string;

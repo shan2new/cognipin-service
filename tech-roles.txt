@@ -1,0 +1,1044 @@
+# Comprehensive Technology Roles
+# Generated on 2025-08-26T10:19:54.530Z
+
+*Artificial Intelligence and Machine Learning Security Roles**
+*C-Level Roles**
+*Cloud Engineer**
+*Cloud Security Roles**
+*Company-Specific Roles**
+*Compliance Roles**
+*Cybersecurity Consulting Roles**
+*Data Science Roles:**
+*Data Science, Analytics, and Business Intelligence**
+*Data Security Roles**
+*DevOps, SRE, and Platform Engineering**
+*Digital Forensics Roles**
+*Director Roles**
+*Entry-Level Roles**
+*Executive Roles**
+*Hardware Engineering**
+*Incident Response Roles**
+*Information Governance Roles**
+*Information Security Roles**
+*Machine Learning Roles:**
+*Machine Learning and AI Roles**
+*Manager Roles**
+*Mid-Level Roles**
+*Penetration Testing Roles**
+*Product Management**
+*Quality Assurance and Testing**
+*Risk Management Roles**
+*Security Architecture Roles**
+*Security Operations Center (SOC) Roles**
+*Security Research Roles**
+*Senior Roles**
+*Software Development**
+*Specialized Backend Roles**
+*Specialized Roles**
+*VP Roles**
+3D Modeling Engineer
+AI Engineer
+AI Research Scientist
+AMD - Software Engineer, Senior Software Engineer, Principal Software Engineer, Staff Software Engineer, Technical Program Manager, Engineering Manager, Director of Engineering, Vice President of Engineering
+AMD:
+API QA Engineer
+AR/VR Engineer
+ASIC Designer
+Accessibility Tester
+Airbnb - Software Engineer, Senior Software Engineer, Principal Software Engineer, Staff Software Engineer, Technical Program Manager, Engineering Manager, Director of Engineering, Vice President of Engineering
+Airbnb:
+Airbnb: SDE, SDE II, Senior SDE, Principal SDE, Staff SDE
+Algorithm Engineer
+Alphabet - Software Engineer, Senior Software Engineer, Principal Software Engineer, Staff Software Engineer, Technical Program Manager, Engineering Manager, Director of Engineering, Vice President of Engineering
+Amazon - SDE1, SDE2, SDE3, Principal SDE, Staff SDE, Technical Program Manager, Engineering Manager, Director of Engineering, Vice President of Engineering
+Amazon Technical Fellow
+Amazon:
+Amazon: AI/ML Security Engineer, AI/ML Security Manager, AI/ML Architect
+Amazon: Cloud Security Engineer, Cloud Security Manager, Cloud Architect
+Amazon: Compliance Engineer, Compliance Manager, Regulatory Affairs Manager
+Amazon: Cybersecurity Consultant, Security Consultant, Risk Consultant
+Amazon: Data Security Engineer, Data Security Manager, Data Security Architect
+Amazon: Digital Forensics Engineer, Digital Forensics Manager, Digital Forensics Architect
+Amazon: Incident Response Engineer, Incident Response Manager, Security Consultant
+Amazon: Information Governance Engineer, Information Governance Manager, Information Governance Architect
+Amazon: Information Security Engineer, Information Security Manager, Chief Information Security Officer
+Amazon: Penetration Tester, Penetration Testing Manager, Security Consultant
+Amazon: Principal Security Engineer, Security Manager, Cloud Security Manager
+Amazon: Risk Manager, Risk Engineer, Security Risk Manager
+Amazon: SDE1 Security, SDE2 Security, SDE3 Security, Security Engineer
+Amazon: SDE1, SDE2, SDE3, Principal SDE, Senior SDE, Staff SDE
+Amazon: SDE1, SDE2, SDE3, Principal SDE, Test Engineer, Test Automation Engineer
+Amazon: SOC Engineer, SOC Manager, Security Operations Manager
+Amazon: Security Architect, Cloud Security Architect, Enterprise Security Architect
+Amazon: Security Architect, Security Consultant, Cloud Security Engineer
+Amazon: Security Research Engineer, Security Research Manager, Security Research Architect
+Amazon: VP Security, CISO, Director of Security
+Analytics Engineer
+Android Developer
+Angular Developer
+Apple - ICT2, ICT3, ICT4, ICT5, ICT6, Engineering Manager, Technical Program Manager, Director of Engineering, Vice President of Engineering
+Apple:
+Apple: AI/ML Security Engineer, AI/ML Security Manager, AI/ML Architect
+Apple: Cloud Security Engineer, Cloud Security Manager, Cloud Architect
+Apple: Compliance Engineer, Compliance Manager, Regulatory Affairs Manager
+Apple: Cybersecurity Consultant, Security Consultant, Risk Consultant
+Apple: Data Security Engineer, Data Security Manager, Data Security Architect
+Apple: Digital Forensics Engineer, Digital Forensics Manager, Digital Forensics Architect
+Apple: ICT2 Security, ICT3 Security, ICT4 Security, Security Engineer
+Apple: ICT2, ICT3, ICT4, ICT5, ICT6
+Apple: ICT2, ICT3, ICT4, ICT5, ICT6, Test Engineer, Test Automation Engineer
+Apple: ICT5 Security, Security Architect, Cloud Security Engineer
+Apple: ICT6 Security, Security Manager, Cloud Security Manager
+Apple: Incident Response Engineer, Incident Response Manager, Security Consultant
+Apple: Information Governance Engineer, Information Governance Manager, Information Governance Architect
+Apple: Information Security Engineer, Information Security Manager, Chief Information Security Officer
+Apple: Penetration Tester, Penetration Testing Manager, Security Consultant
+Apple: Risk Manager, Risk Engineer, Security Risk Manager
+Apple: SOC Engineer, SOC Manager, Security Operations Manager
+Apple: Security Architect, Cloud Security Architect, Enterprise Security Architect
+Apple: Security Research Engineer, Security Research Manager, Security Research Architect
+Apple: VP of Security, CISO, Director of Security
+Application Security Engineer
+Associate Product Manager
+Associate Software Engineer
+AutoML Engineer
+AutoML Engineer (Amazon)
+AutoML Engineer (Apple)
+AutoML Engineer (Facebook)
+AutoML Engineer (Google)
+AutoML Engineer (Microsoft)
+AutoML Engineer (Tesla)
+Automation Engineer
+Autonomous Vehicle Engineer
+Backend AI/ML Engineer (L2, L3)
+Backend API Engineer (L2, L3)
+Backend Architect (L4)
+Backend Architect (L5)
+Backend Associate (L1)
+Backend Business Intelligence Engineer (L2, L3)
+Backend CTO (L7)
+Backend Caching Engineer (L2, L3)
+Backend Chatbot Engineer (L2, L3)
+Backend Compliance Engineer (L4, L5)
+Backend Computer Vision Engineer (L2, L3)
+Backend Data Science Engineer (L2, L3)
+Backend Database Engineer (L2, L3)
+Backend Design Lead (L4)
+Backend Design Lead (L5)
+Backend Developer (L1, L2, L3)
+Backend Developer (L2, L3)
+Backend Director (L6)
+Backend Engineer
+Backend Engineering Board Member (L7)
+Backend Engineering Director (L7)
+Backend Engineering GM (L7)
+Backend Engineering Manager (L4)
+Backend Engineering Manager (L5)
+Backend Engineering President (L7)
+Backend Engineering SVP (L7)
+Backend Intern (L0)
+Backend Lead (L3)
+Backend Load Balancer Engineer (L2, L3)
+Backend Messaging Queue Engineer (L2, L3)
+Backend Mobile Developer
+Backend NLP Engineer (L2, L3)
+Backend Natural Language Processing Engineer (L2, L3)
+Backend Performance Engineer (L2, L3)
+Backend Predictive Analytics Engineer (L2, L3)
+Backend QA Engineer (L1)
+Backend Recommendation Engine (L2, L3)
+Backend Risk Engineer (L4, L5)
+Backend Security Architect (L4, L5)
+Backend Security Engineer (L2, L3)
+Backend Software Engineer (L1, L2, L3)
+Backend Software Engineer (L2, L3)
+Backend Solutions Architect (L4)
+Backend Solutions Architect (L5)
+Backend Speech Recognition Engineer (L2, L3)
+Backend Support Engineer (L1)
+Backend Team Lead (L4)
+Backend Technical Lead (L4)
+Backend Technical Lead (L5)
+Backend Testing Engineer (L1)
+Backend VP (L6)
+Backend VP of Engineering (L7)
+Big Data Engineer
+Blockchain Developer
+Business Intelligence Developer
+CDO of Cloud
+CDO of DevOps
+CDO of Infrastructure
+CDO of Systems
+CIO of Cloud
+CIO of DevOps
+CIO of Infrastructure
+CIO of Systems
+CSO of Cloud
+CSO of DevOps
+CSO of Infrastructure
+CSO of Systems
+CTO of Cloud
+CTO of DevOps
+CTO of Infrastructure
+CTO of Systems
+Chaos Engineer
+Chief Architect
+Chief Cloud Architect
+Chief Data Officer
+Chief Data Officer (Amazon)
+Chief Data Officer (Apple)
+Chief Data Officer (CDO)
+Chief Data Officer (Facebook)
+Chief Data Officer (Google)
+Chief Data Officer (Microsoft)
+Chief Data Officer (Tesla)
+Chief DevOps Officer
+Chief Information Officer (CIO)
+Chief Infrastructure Officer
+Chief Machine Learning Officer
+Chief Mobile Officer
+Chief Product Officer
+Chief Product Officer (CPO)
+Chief Product Officer II
+Chief Product Officer III
+Chief Product Officer IV
+Chief Product Officer V
+Chief Quality Officer
+Chief Security Officer (CSO)
+Chief Systems Officer
+Chief Technology Officer
+Chief Technology Officer (CTO)
+Cisco - Software Engineer, Senior Software Engineer, Principal Software Engineer, Staff Software Engineer, Technical Program Manager, Engineering Manager, Director of Engineering, Vice President of Engineering
+Cloud Architect
+Cloud Architect - AWS
+Cloud Architect Director
+Cloud Architect Lead
+Cloud Architect Manager
+Cloud Architect VP
+Cloud Backend Developer (L2, L3)
+Cloud Engineer
+Cloud Engineer - Azure
+Cloud Engineer - Hybrid Cloud
+Cloud Engineering Director
+Cloud Engineering Manager
+Cloud Engineering VP
+Cloud Operations Engineer
+Cloud QA Engineer
+Cloud Security Director
+Cloud Security Engineer
+Cloud Security Manager
+Cloud Security Specialist
+Cloud Security VP
+Cloud Support Engineer
+Compiler Engineer
+Compliance Officer
+Computer Graphics Engineer
+Computer Vision Engineer
+Computer Vision Engineer (Amazon)
+Computer Vision Engineer (Apple)
+Computer Vision Engineer (Facebook)
+Computer Vision Engineer (Google)
+Computer Vision Engineer (Microsoft)
+Computer Vision Engineer (Tesla)
+Configuration Manager
+Continuous Delivery (CD) Engineer
+Continuous Integration (CI) Engineer
+Cryptography Engineer
+Customer Success Engineer
+Data Analyst
+Data Analyst (Amazon)
+Data Analyst (Apple)
+Data Analyst (Facebook)
+Data Analyst (Google)
+Data Analyst (Microsoft)
+Data Analyst (Tesla)
+Data Architect
+Data Engineer
+Data Scientist
+Data Scientist (Amazon)
+Data Scientist (Apple)
+Data Scientist (Facebook)
+Data Scientist (Google)
+Data Scientist (Microsoft)
+Data Scientist (Tesla)
+Data Scientist, Senior Data Scientist, Technical Lead Data Science, Director Data Science
+Data Visualization Engineer
+Database Administrator
+Database Engineer
+Deep Learning Engineer
+Deep Learning Engineer (Amazon)
+Deep Learning Engineer (Apple)
+Deep Learning Engineer (Facebook)
+Deep Learning Engineer (Google)
+Deep Learning Engineer (Microsoft)
+Deep Learning Engineer (Tesla)
+Dell - Software Engineer, Senior Software Engineer, Principal Software Engineer, Staff Software Engineer, Technical Program Manager, Engineering Manager, Director of Engineering, Vice President of Engineering
+DevOps Backend Engineer (L2, L3)
+DevOps Director
+DevOps Engineer
+DevOps Engineer - CI/CD
+DevOps Engineer - Docker
+DevOps Engineer - Kubernetes
+DevOps Engineer - Machine Learning
+DevOps Engineer - Orchestration
+DevOps Engineer Assistant
+DevOps Engineer Director
+DevOps Engineer Intern
+DevOps Engineer Lead
+DevOps Engineer Manager
+DevOps Engineer Specialist
+DevOps Engineer VP
+DevOps Engineer, Senior DevOps Engineer, Technical Lead DevOps, Director DevOps
+DevOps Engineering Director
+DevOps Engineering Manager
+DevOps Engineering VP
+DevOps Manager
+DevOps QA Engineer
+DevOps VP
+Developer Advocate
+Developer Relations
+Director of Cloud Engineering
+Director of Data Science
+Director of Data Science (Amazon)
+Director of Data Science (Apple)
+Director of Data Science (Facebook)
+Director of Data Science (Google)
+Director of Data Science (Microsoft)
+Director of Data Science (Tesla)
+Director of DevOps Engineering
+Director of Engineering
+Director of Infrastructure Engineering
+Director of Machine Learning
+Director of Mobile Engineering
+Director of Mobile Product
+Director of Product
+Director of Product Management
+Director of Systems Engineering
+Director of Test Automation
+Director of Test Engineering
+Distinguished Architect
+Distinguished Engineer
+Distinguished Engineer (Amazon)
+Distinguished Engineer (Microsoft)
+Documentation Engineer
+Drone Engineer
+E3 Data Scientist, E4 Data Scientist, E5 Senior Data Scientist, E6 Staff Data Scientist, Staff Technical Lead Data Science
+E3 DevOps Engineer, E4 DevOps Engineer, E5 Senior DevOps Engineer, E6 Staff DevOps Engineer, Staff Technical Lead DevOps
+E3 Machine Learning Engineer, E4 Machine Learning Engineer, E5 Senior Machine Learning Engineer, E6 Staff Machine Learning Engineer, Staff Technical Lead Machine Learning
+E3 QA Engineer, E4 QA Engineer, E5 Senior QA Engineer, E6 Staff QA Engineer, Staff Technical Lead QA
+E3 Software Engineer
+E3 Software Engineer, E4 Software Engineer, E5 Senior Software Engineer, E6 Staff Software Engineer, Staff Technical Lead
+E4 Software Engineer
+E5 Senior Software Engineer
+E6 Staff Software Engineer
+E7 Senior Staff Software Engineer
+E8 Principal Engineer
+E9 Distinguished Engineer
+ETL Developer
+Embedded Systems Engineer
+Engineering Manager
+Enterprise Architect
+Ericsson - Software Engineer, Senior Software Engineer, Principal Software Engineer, Staff Software Engineer, Technical Program Manager, Engineering Manager, Director of Engineering, Vice President of Engineering
+Explainable AI (XAI) Engineer
+Explainable AI (XAI) Engineer (Amazon)
+Explainable AI (XAI) Engineer (Apple)
+Explainable AI (XAI) Engineer (Facebook)
+Explainable AI (XAI) Engineer (Google)
+Explainable AI (XAI) Engineer (Microsoft)
+Explainable AI (XAI) Engineer (Tesla)
+FPGA Engineer
+Facebook - Software Engineer, Senior Software Engineer, Principal Software Engineer, Staff Software Engineer, Technical Program Manager, Engineering Manager, Director of Engineering, Vice President of Engineering
+Facebook: SDE, SDE II, Senior SDE, Principal SDE, Staff SDE
+Fellow
+Firmware Engineer
+Flutter Developer
+Frontend Accessibility Specialist
+Frontend Architect
+Frontend Cloud Engineer
+Frontend DevOps Engineer
+Frontend Developer
+Frontend E-commerce Application Developer
+Frontend Engineer
+Frontend Engineering Director
+Frontend Engineering Manager
+Frontend Enterprise Application Developer
+Frontend Enterprise Mobile Application Developer
+Frontend Enterprise Software Developer
+Frontend Enterprise Web
+Frontend Enterprise Web Application Developer
+Frontend Full Stack Developer
+Frontend Interaction Designer
+Frontend Manager
+Frontend Mobile Application Developer
+Frontend Mobile Developer
+Frontend Performance Optimizer
+Frontend Progressive Web App (PWA) Developer
+Frontend Quality Assurance Engineer
+Frontend Security Specialist
+Frontend Single Page Application (SPA) Developer
+Frontend Solutions Architect
+Frontend Specialist
+Frontend Team Lead
+Frontend Technical Director
+Frontend Testing Engineer
+Frontend UI Designer
+Frontend UX Designer
+Frontend Web Application Developer
+Full Stack Backend Developer (L2, L3)
+Full Stack Engineer
+Game Engine Developer
+Google - L3 Software Engineer, L4 Software Engineer, L5 Senior Software Engineer, L6 Staff Software Engineer, Engineering Manager, Technical Program Manager, Director of Engineering, Vice President of Engineering
+Google:
+Google: AI/ML Security Engineer, AI/ML Security Manager, AI/ML Architect
+Google: Cloud Security Engineer, Cloud Security Manager, Cloud Architect
+Google: Compliance Engineer, Compliance Manager, Regulatory Affairs Manager
+Google: Cybersecurity Consultant, Security Consultant, Risk Consultant
+Google: Data Security Engineer, Data Security Manager, Data Security Architect
+Google: Digital Forensics Engineer, Digital Forensics Manager, Digital Forensics Architect
+Google: Director of Security, VP of Security, CISO
+Google: Incident Response Engineer, Incident Response Manager, Security Consultant
+Google: Information Governance Engineer, Information Governance Manager, Information Governance Architect
+Google: Information Security Engineer, Information Security Manager, Chief Information Security Officer
+Google: L3 Security Engineer, L4 Security Engineer, L5 Senior Security Engineer, Security Engineer
+Google: L3 Software Engineer, L4 Software Engineer, L5 Senior Software Engineer, L6 Staff Software Engineer
+Google: L3 Software Engineer, L4 Software Engineer, L5 Senior Software Engineer, L6 Staff Software Engineer, Test Engineer, Test Automation Engineer
+Google: L6 Staff Security Engineer, Security Architect, Cloud Security Engineer
+Google: L7 Lead Security Engineer, Security Manager, Cloud Security Manager
+Google: Penetration Tester, Penetration Testing Manager, Security Consultant
+Google: Risk Manager, Risk Engineer, Security Risk Manager
+Google: SOC Engineer, SOC Manager, Security Operations Manager
+Google: Security Architect, Cloud Security Architect, Enterprise Security Architect
+Google: Security Research Engineer, Security Research Manager, Security Research Architect
+Growth Product Manager
+HP - Software Engineer, Senior Software Engineer, Principal Software Engineer, Staff Software Engineer, Technical Program Manager, Engineering Manager, Director of Engineering, Vice President of Engineering
+Haptics Engineer
+Hardware
+Hardware Design Engineer
+Hardware Design Engineer II
+Hardware Design Engineer III
+Hardware Design Engineer IV
+Hardware Design Engineer V
+Hardware Design Engineer VI
+Hardware Design Engineer VII
+Hardware Engineer
+Hardware Engineer C
+Hardware Engineer D
+Hardware Engineer E
+Hardware Engineer F
+Hardware Engineer G
+Hardware Engineer H
+Hardware Engineer I
+Hardware Engineer II
+Hardware Engineer III
+Hardware Engineer IV
+Hardware Engineer IX
+Hardware Engineer L
+Hardware Engineer LI
+Hardware Engineer LII
+Hardware Engineer LIII
+Hardware Engineer LIV
+Hardware Engineer LIX
+Hardware Engineer LV
+Hardware Engineer LVI
+Hardware Engineer LVII
+Hardware Engineer LVIII
+Hardware Engineer LX
+Hardware Engineer LXI
+Hardware Engineer LXII
+Hardware Engineer LXIII
+Hardware Engineer LXIV
+Hardware Engineer LXIX
+Hardware Engineer LXV
+Hardware Engineer LXVI
+Hardware Engineer LXVII
+Hardware Engineer LXVIII
+Hardware Engineer LXX
+Hardware Engineer LXXI
+Hardware Engineer LXXII
+Hardware Engineer LXXIII
+Hardware Engineer LXXIV
+Hardware Engineer LXXIX
+Hardware Engineer LXXV
+Hardware Engineer LXXVI
+Hardware Engineer LXXVII
+Hardware Engineer LXXVIII
+Hardware Engineer LXXX
+Hardware Engineer LXXXI
+Hardware Engineer LXXXII
+Hardware Engineer LXXXIII
+Hardware Engineer LXXXIV
+Hardware Engineer LXXXIX
+Hardware Engineer LXXXV
+Hardware Engineer LXXXVI
+Hardware Engineer LXXXVII
+Hardware Engineer LXXXVIII
+Hardware Engineer V
+Hardware Engineer VI
+Hardware Engineer VII
+Hardware Engineer VIII
+Hardware Engineer X
+Hardware Engineer XI
+Hardware Engineer XII
+Hardware Engineer XIII
+Hardware Engineer XIV
+Hardware Engineer XIX
+Hardware Engineer XL
+Hardware Engineer XLI
+Hardware Engineer XLII
+Hardware Engineer XLIII
+Hardware Engineer XLIV
+Hardware Engineer XLIX
+Hardware Engineer XLV
+Hardware Engineer XLVI
+Hardware Engineer XLVII
+Hardware Engineer XLVIII
+Hardware Engineer XV
+Hardware Engineer XVI
+Hardware Engineer XVII
+Hardware Engineer XVIII
+Hardware Engineer XX
+Hardware Engineer XXI
+Hardware Engineer XXII
+Hardware Engineer XXIII
+Hardware Engineer XXIV
+Hardware Engineer XXIX
+Hardware Engineer XXV
+Hardware Engineer XXVI
+Hardware Engineer XXVII
+Hardware Engineer XXVIII
+Hardware Engineer XXX
+Hardware Engineer XXXI
+Hardware Engineer XXXII
+Hardware Engineer XXXIII
+Hardware Engineer XXXIV
+Hardware Engineer XXXIX
+Hardware Engineer XXXV
+Hardware Engineer XXXVI
+Hardware Engineer XXXVII
+Hardware Engineer XXXVIII
+Head of Software Testing
+Here is a comprehensive list of Infrastructure and DevOps roles across major tech companies:
+Here is a list of Mobile Development roles across major tech companies:
+Here is the comprehensive list of technology roles across major tech companies:
+Here is the list of Backend Development roles across major tech companies:
+Here is the list of Cloud and Architecture roles:
+Here is the list of Data Science and Machine Learning roles across major tech companies:
+Here is the list of Frontend Development roles:
+Here is the list of Management and Leadership roles across major tech companies:
+Here is the list of Product and Design roles across major tech companies:
+Here is the list of Quality Assurance and Testing roles:
+Here is the list of Security and Compliance roles across major tech companies:
+Here is the list of hardware and IoT roles across major tech companies:
+Human-in-the-Loop (HITL) Engineer
+Human-in-the-Loop (HITL) Engineer (Amazon)
+Human-in-the-Loop (HITL) Engineer (Apple)
+Human-in-the-Loop (HITL) Engineer (Facebook)
+Human-in-the-Loop (HITL) Engineer (Google)
+Human-in-the-Loop (HITL) Engineer (Microsoft)
+Human-in-the-Loop (HITL) Engineer (Tesla)
+IBM - Software Engineer, Senior Software Engineer, Principal Software Engineer, Staff Software Engineer, Technical Program Manager, Engineering Manager, Director of Engineering, Vice President of Engineering
+IBM:
+IC Design Engineer
+ICT2
+ICT2 Data Science, ICT3 Data Science, ICT4 Data Science, ICT5 Data Science, ICT6 Data Science, Senior ICT Data Science, Technical Lead Data Science
+ICT2 DevOps, ICT3 DevOps, ICT4 DevOps, ICT5 DevOps, ICT6 DevOps, Senior ICT DevOps, Technical Lead DevOps
+ICT2 Machine Learning, ICT3 Machine Learning, ICT4 Machine Learning, ICT5 Machine Learning, ICT6 Machine Learning, Senior ICT Machine Learning, Technical Lead Machine Learning
+ICT2 QA, ICT3 QA, ICT4 QA, ICT5 QA, ICT6 QA, Senior ICT QA, Technical Lead QA
+ICT2, ICT3, ICT4, ICT5, ICT6, Senior ICT, Technical Lead, Director ICT
+ICT3
+ICT4
+ICT5
+ICT6
+Identity and Access Management Specialist
+Infrastructure Director
+Infrastructure Engineer
+Infrastructure Engineer - Artificial Intelligence
+Infrastructure Engineer - Backup and Recovery
+Infrastructure Engineer - Containerization
+Infrastructure Engineer - Monitoring
+Infrastructure Engineer - Networking
+Infrastructure Engineer Director
+Infrastructure Engineer Intern
+Infrastructure Engineer Lead
+Infrastructure Engineer Manager
+Infrastructure Engineer VP
+Infrastructure Engineering Director
+Infrastructure Engineering Manager
+Infrastructure Engineering VP
+Infrastructure Manager
+Infrastructure VP
+Intel - Software Engineer, Senior Software Engineer, Principal Software Engineer, Staff Software Engineer, Technical Program Manager, Engineering Manager, Director of Engineering, Vice President of Engineering
+Intel:
+IoT Engineer
+JavaScript Engineer
+Junior Backend Engineer (L1)
+Junior Data Engineer
+Junior Data Scientist
+Junior Data Scientist (Amazon)
+Junior Data Scientist (Apple)
+Junior Data Scientist (Facebook)
+Junior Data Scientist (Google)
+Junior Data Scientist (Microsoft)
+Junior Data Scientist (Tesla)
+Junior Machine Learning Engineer
+Junior Mobile Developer
+Junior Software Engineer
+L10 Google Fellow
+L11 Senior Google Fellow
+L3 Data Scientist, L4 Data Scientist, L5 Senior Data Scientist, L6 Staff Data Scientist, Staff Technical Lead Data Science
+L3 DevOps Engineer, L4 DevOps Engineer, L5 Senior DevOps Engineer, L6 Staff DevOps Engineer, Staff Technical Lead DevOps
+L3 Machine Learning Engineer, L4 Machine Learning Engineer, L5 Senior Machine Learning Engineer, L6 Staff Machine Learning Engineer, Staff Technical Lead Machine Learning
+L3 QA Engineer, L4 QA Engineer, L5 Senior QA Engineer, L6 Staff QA Engineer, Staff Technical Lead QA
+L3 Software Engineer
+L3 Software Engineer, L4 Software Engineer, L5 Senior Software Engineer, L6 Staff Software Engineer, Staff Technical Lead, Technical Program Manager
+L4 Software Engineer
+L5 Senior Software Engineer
+L6 Staff Software Engineer
+L7 Senior Staff Software Engineer
+L8 Principal Engineer
+L9 Distinguished Engineer
+Lead Data Analyst (Amazon)
+Lead Data Analyst (Apple)
+Lead Data Analyst (Facebook)
+Lead Data Analyst (Google)
+Lead Data Analyst (Microsoft)
+Lead Data Analyst (Tesla)
+Lead Data Engineer
+Lead Data Scientist
+Lead Frontend Developer
+Lead Frontend Engineer
+Lead Machine Learning Engineer
+Lead QA Engineer
+Lead Software Engineer
+LinkedIn:
+Load Testing Engineer
+Lyft - Software Engineer, Senior Software Engineer, Principal Software Engineer, Staff Software Engineer, Technical Program Manager, Engineering Manager, Director of Engineering, Vice President of Engineering
+Lyft: SDE, SDE II, Senior SDE, Principal SDE, Staff SDE
+MLOps Engineer
+Machine Learning Engineer
+Machine Learning Engineer (Amazon)
+Machine Learning Engineer (Apple)
+Machine Learning Engineer (Facebook)
+Machine Learning Engineer (Google)
+Machine Learning Engineer (Microsoft)
+Machine Learning Engineer (Tesla)
+Machine Learning Engineer, Senior Machine Learning Engineer, Technical Lead Machine Learning, Director Machine Learning
+Machine Learning Scientist
+Machine Learning Scientist (Google)
+Manager of Cloud Engineering
+Manager of DevOps Engineering
+Manager of Infrastructure Engineering
+Manager of Systems Engineering
+Manual QA Tester
+Meta - E3 Software Engineer, E4 Software Engineer, E5 Senior Software Engineer, E6 Staff Software Engineer, Engineering Manager, Technical Program Manager, Director of Engineering, Vice President of Engineering
+Meta:
+Meta: AI/ML Security Engineer, AI/ML Security Manager, AI/ML Architect
+Meta: Cloud Security Engineer, Cloud Security Manager, Cloud Architect
+Meta: Compliance Engineer, Compliance Manager, Regulatory Affairs Manager
+Meta: Cybersecurity Consultant, Security Consultant, Risk Consultant
+Meta: Data Security Engineer, Data Security Manager, Data Security Architect
+Meta: Digital Forensics Engineer, Digital Forensics Manager, Digital Forensics Architect
+Meta: E3 Security Engineer, E4 Security Engineer, E5 Senior Security Engineer, Security Engineer
+Meta: E3 Software Engineer, E4 Software Engineer, E5 Senior Software Engineer, E6 Staff Software Engineer
+Meta: E3 Software Engineer, E4 Software Engineer, E5 Senior Software Engineer, E6 Staff Software Engineer, Test Engineer, Test Automation Engineer
+Meta: E6 Staff Security Engineer, Security Architect, Cloud Security Engineer
+Meta: E7 Senior Security Engineer, Security Manager, Cloud Security Manager
+Meta: Incident Response Engineer, Incident Response Manager, Security Consultant
+Meta: Information Governance Engineer, Information Governance Manager, Information Governance Architect
+Meta: Information Security Engineer, Information Security Manager, Chief Information Security Officer
+Meta: Penetration Tester, Penetration Testing Manager, Security Consultant
+Meta: Risk Manager, Risk Engineer, Security Risk Manager
+Meta: SOC Engineer, SOC Manager, Security Operations Manager
+Meta: Security Architect, Cloud Security Architect, Enterprise Security Architect
+Meta: Security Research Engineer, Security Research Manager, Security Research Architect
+Meta: VP of Security, CISO, Director of Security
+Microservices Backend Developer (L2, L3)
+Microsoft - SDE, SDE II, Senior SDE, Principal SDE, Staff SDE, Technical Program Manager, Engineering Manager, Director of Engineering, Vice President of Engineering
+Microsoft:
+Microsoft: AI/ML Security Engineer, AI/ML Security Manager, AI/ML Architect
+Microsoft: Cloud Security Engineer, Cloud Security Manager, Cloud Architect
+Microsoft: Compliance Engineer, Compliance Manager, Regulatory Affairs Manager
+Microsoft: Cybersecurity Consultant, Security Consultant, Risk Consultant
+Microsoft: Data Security Engineer, Data Security Manager, Data Security Architect
+Microsoft: Digital Forensics Engineer, Digital Forensics Manager, Digital Forensics Architect
+Microsoft: Incident Response Engineer, Incident Response Manager, Security Consultant
+Microsoft: Information Governance Engineer, Information Governance Manager, Information Governance Architect
+Microsoft: Information Security Engineer, Information Security Manager, Chief Information Security Officer
+Microsoft: Penetration Tester, Penetration Testing Manager, Security Consultant
+Microsoft: Risk Manager, Risk Engineer, Security Risk Manager
+Microsoft: SDE Security, SDE II Security, Senior SDE Security, Security Engineer
+Microsoft: SDE, SDE II, Senior SDE, Principal SDE, Staff SDE
+Microsoft: SDE, SDE II, Senior SDE, Principal SDE, Test Engineer, Test Automation Engineer
+Microsoft: SOC Engineer, SOC Manager, Security Operations Manager
+Microsoft: Security Architect, Cloud Security Architect, Enterprise Security Architect
+Microsoft: Security Research Engineer, Security Research Manager, Security Research Architect
+Microsoft: Senior SDE II Security, Security Manager, Cloud Security Manager
+Microsoft: Senior SDE Security, Security Architect, Cloud Security Engineer
+Microsoft: VP of Security, CISO, Director of Security
+Mid-level Software Engineer
+Mobile AI/ML Developer
+Mobile AR/VR Developer
+Mobile App Developer
+Mobile Application Developer
+Mobile Architect
+Mobile Backend Developer
+Mobile C++ Developer
+Mobile Cloud Architect
+Mobile Cloud Engineer
+Mobile Cross-Platform Developer
+Mobile DevOps Director
+Mobile DevOps Engineer
+Mobile DevOps Manager
+Mobile Developer
+Mobile Engineer
+Mobile Engineering Manager
+Mobile Flutter Developer
+Mobile Frontend Developer
+Mobile Full Stack Developer
+Mobile Gaming Developer
+Mobile Hybrid Developer
+Mobile IoT Developer
+Mobile Java Developer
+Mobile Kotlin Developer
+Mobile Native Developer
+Mobile PWA Developer
+Mobile Product Manager
+Mobile Progressive Web App Developer
+Mobile QA Engineer
+Mobile Quality Assurance Director
+Mobile Quality Assurance Engineer
+Mobile Quality Assurance Manager
+Mobile React Native Developer
+Mobile Software Developer
+Mobile Swift Developer
+Mobile Technical Lead
+Mobile Test Engineer
+Mobile Test Manager
+Mobile UX/UI Design Director
+Mobile UX/UI Design Lead
+Mobile UX/UI Designer
+Mobile Web Developer
+Mobile Xamarin Developer
+NLP Engineer
+NVIDIA - Software Engineer, Senior Software Engineer, Principal Software Engineer, Staff Software Engineer, Technical Program Manager, Engineering Manager, Director of Engineering, Vice President of Engineering
+NVIDIA:
+Natural Language Processing
+Natural Language Processing (NLP) Engineer
+Natural Language Processing (NLP) Engineer (Amazon)
+Natural Language Processing (NLP) Engineer (Apple)
+Natural Language Processing (NLP) Engineer (Facebook)
+Natural Language Processing (NLP) Engineer (Google)
+Natural Language Processing (NLP) Engineer (Microsoft)
+Natural Language Processing (NLP) Engineer (Tesla)
+Netflix:
+Network Engineer
+Node.js Developer
+Note: L0, L1, L2, L3, L4, L5, L6, L7 are the level designations used by some companies, while others use different level designations. This list is not exhaustive and is based on general industry trends and job postings.
+Operating Systems Engineer
+Oracle - Software Engineer, Senior Software Engineer, Principal Software Engineer, Staff Software Engineer, Technical Program Manager, Engineering Manager, Director of Engineering, Vice President of Engineering
+Oracle:
+PCB Designer
+Palantir - Software Engineer, Senior Software Engineer, Principal Software Engineer, Staff Software Engineer, Technical Program Manager, Engineering Manager, Director of Engineering, Vice President of Engineering
+Partner SDE
+Penetration Tester
+Performance Test Engineer
+Performance Testing Engineer
+Platform Engineer
+Power Electronics Engineer
+Predictive Analytics Specialist
+Predictive Analytics Specialist (Amazon)
+Predictive Analytics Specialist (Apple)
+Predictive Analytics Specialist (Facebook)
+Predictive Analytics Specialist (Microsoft)
+Predictive Analytics Specialist (Tesla)
+Predictive Modeling Analyst
+Predictive Modeling Analyst (Google)
+Principal Architect
+Principal Backend Engineer (L5)
+Principal Cloud Engineer
+Principal Data Analyst (Amazon)
+Principal Data Analyst (Apple)
+Principal Data Analyst (Facebook)
+Principal Data Analyst (Google)
+Principal Data Analyst (Microsoft)
+Principal Data Analyst (Tesla)
+Principal Data Engineer
+Principal Data Scientist
+Principal DevOps Engineer
+Principal Engineer (Apple)
+Principal Infrastructure Engineer
+Principal Machine Learning Engineer
+Principal Mobile Engineer
+Principal Product Manager
+Principal QA Engineer
+Principal SDE
+Principal Software Engineer
+Principal Systems Engineer
+Product Analyst
+Product Analyst II
+Product Analyst III
+Product Analyst IV
+Product Analyst V
+Product Designer
+Product Designer II
+Product Designer III
+Product Designer IV
+Product Designer V
+Product Manager
+Product Manager II
+Product Manager III
+Product Manager IV
+Product Manager V
+Product Marketing Manager
+Product Owner
+Product Owner II
+Product Owner III
+Product Owner IV
+Product Owner V
+Product Specialist
+Product Specialist II
+Product Specialist III
+Product Specialist IV
+Product Specialist V
+QA Analyst
+QA Engineer
+QA Engineer, Senior QA Engineer, Technical Lead QA, Director QA
+QA Team Lead
+QA Tester
+Qualcomm - Software Engineer, Senior Software Engineer, Principal Software Engineer, Staff Software Engineer, Technical Program Manager, Engineering Manager, Director of Engineering, Vice President of Engineering
+Quality Assurance Analyst
+Quality Assurance Coordinator
+Quality Assurance Coordinator (Senior)
+Quality Assurance Director
+Quality Assurance Engineer
+Quality Assurance Manager
+Quality Assurance Manager (Senior)
+Quality Assurance Specialist
+Quality Assurance Specialist (Lead)
+Quality Assurance Specialist (Senior)
+Quality Assurance Vice President
+Quantitative Analyst
+Quantitative Analyst (Amazon)
+Quantitative Analyst (Apple)
+Quantitative Analyst (Facebook)
+Quantitative Analyst (Google)
+Quantitative Analyst (Microsoft)
+Quantitative Analyst (Tesla)
+Quantum Computing Engineer
+RF Engineer
+React Developer
+React Native Developer
+Reinforcement Learning Engineer
+Reinforcement Learning Engineer (Amazon)
+Reinforcement Learning Engineer (Apple)
+Reinforcement Learning Engineer (Facebook)
+Reinforcement Learning Engineer (Google)
+Reinforcement Learning Engineer (Microsoft)
+Reinforcement Learning Engineer (Tesla)
+Release Engineer
+Research Scientist
+Research Scientist (Amazon)
+Research Scientist (Apple)
+Research Scientist (Facebook)
+Research Scientist (Google)
+Research Scientist (Microsoft)
+Research Scientist (Tesla)
+Robotics Engineer
+SDE
+SDE Data Science, SDE II Data Science, Senior SDE Data Science, Principal SDE Data Science, Partner SDE Data Science
+SDE DevOps, SDE II DevOps, Senior SDE DevOps, Principal SDE DevOps, Partner SDE DevOps
+SDE I
+SDE II
+SDE III
+SDE Machine Learning, SDE II Machine Learning, Senior SDE Machine Learning, Principal SDE Machine Learning, Partner SDE Machine Learning
+SDE QA, SDE II QA, Senior SDE QA, Principal SDE QA, Partner SDE QA
+SDE, SDE II, Senior SDE, Principal SDE, Partner SDE, Distinguished Engineer, Technical Fellow
+SDE1
+SDE1, SDE2, SDE3, Senior SDE, Principal SDE, Staff SDE, Technical Lead, Director SDE, Principal Technical Lead
+SDE2
+SDE3
+SDET (Software Development Engineer in Test)
+SVP of Cloud
+SVP of DevOps
+SVP of Infrastructure
+SVP of Product Management
+SVP of Systems
+Salesforce - Software Engineer, Senior Software Engineer, Principal Software Engineer, Staff Software Engineer, Technical Program Manager, Engineering Manager, Director of Engineering, Vice President of Engineering
+Salesforce:
+Search Engine Engineer
+Security Analyst
+Security Architect
+Security Engineer
+Security Operations Engineer
+Security Test Engineer
+Security Testing Engineer
+Self-Supervised Learning Engineer
+Self-Supervised Learning Engineer (Amazon)
+Self-Supervised Learning Engineer (Apple)
+Self-Supervised Learning Engineer (Facebook)
+Self-Supervised Learning Engineer (Google)
+Self-Supervised Learning Engineer (Microsoft)
+Self-Supervised Learning Engineer (Tesla)
+Semi-Supervised Learning Engineer
+Semi-Supervised Learning Engineer (Amazon)
+Semi-Supervised Learning Engineer (Apple)
+Semi-Supervised Learning Engineer (Facebook)
+Semi-Supervised Learning Engineer (Google)
+Semi-Supervised Learning Engineer (Microsoft)
+Semi-Supervised Learning Engineer (Tesla)
+Senior Backend Developer (L5, L6)
+Senior Backend Engineer (L3, L4)
+Senior Backend Software Engineer (L5, L6)
+Senior Cloud Engineer
+Senior Data Analyst (Amazon)
+Senior Data Analyst (Apple)
+Senior Data Analyst (Facebook)
+Senior Data Analyst (Google)
+Senior Data Analyst (Microsoft)
+Senior Data Analyst (Tesla)
+Senior Data Engineer
+Senior Data Scientist
+Senior DevOps Engineer
+Senior Director of Engineering
+Senior Director of Product
+Senior Engineering Manager
+Senior Frontend Developer
+Senior Frontend Engineer
+Senior Frontend Engineering Manager
+Senior Infrastructure Engineer
+Senior Machine Learning Engineer
+Senior Mobile Architect
+Senior Mobile Developer
+Senior Principal SDE
+Senior Principal Software Engineer
+Senior Product Manager
+Senior QA Engineer
+Senior SDE
+Senior Software Engineer
+Senior Staff Software Engineer
+Senior Systems Engineer
+Senior Technical Fellow
+Senior Test Analyst
+Senior Test Manager
+Site Reliability Engineer (SRE)
+Software Engineer Data Science, Senior Software Engineer Data Science, Staff Software Engineer Data Science, Technical Lead Data Science
+Software Engineer DevOps, Senior Software Engineer DevOps, Staff Software Engineer DevOps, Technical Lead DevOps
+Software Engineer I
+Software Engineer II
+Software Engineer III
+Software Engineer IV
+Software Engineer Machine Learning, Senior Software Engineer Machine Learning, Staff Software Engineer Machine Learning, Technical
+Software Engineer Machine Learning, Senior Software Engineer Machine Learning, Staff Software Engineer Machine Learning, Technical Lead Machine Learning
+Software Engineer QA, Senior Software Engineer QA, Staff Software Engineer QA, Technical Lead QA
+Software Engineer V
+Software Engineer, Senior Software Engineer, Staff Software Engineer, Technical Lead, Director Software Engineering
+Software Tester
+Software Testing Manager
+Software Testing Manager (Senior)
+Solutions Architect
+SpaceX:
+Staff Software Engineer
+Statistician
+Supervised Learning Engineer
+Supervised Learning Engineer (Amazon)
+Supervised Learning Engineer (Apple)
+Supervised Learning Engineer (Facebook)
+Supervised Learning Engineer (Google)
+Supervised Learning Engineer (Microsoft)
+Supervised Learning Engineer (Tesla)
+System Administrator
+Systems Director
+Systems Engineer
+Systems Engineer - Automation
+Systems Engineer - Compliance
+Systems Engineer - Internet of Things (IoT)
+Systems Engineer - Storage
+Systems Engineer - Virtualization
+Systems Engineer Director
+Systems Engineer Intern
+Systems Engineer Lead
+Systems Engineer Manager
+Systems Engineer VP
+Systems Engineering Director
+Systems Engineering Manager
+Systems Engineering VP
+Systems Manager
+Systems VP
+Technical Account Manager
+Technical Director
+Technical Evangelist
+Technical Fellow (Microsoft)
+Technical Lead - QA
+Technical Lead Frontend
+Technical Program Manager
+Technical Program Manager - QA
+Technical Writer
+Tesla:
+Tesla: SDE, SDE II, Senior SDE, Principal SDE, Staff SDE
+Test Analyst
+Test Analyst (Senior)
+Test Architect
+Test Automation Engineer
+Test Automation Framework Engineer
+Test Automation Manager
+Test Automation Manager (Senior)
+Test Data Management (TDM) Engineer
+Test Engineer
+Test Engineering Manager
+Test Engineering Manager (Senior)
+Test Lead
+Test Manager
+Threat Intelligence Analyst
+Transfer Learning Engineer
+Transfer Learning Engineer (Amazon)
+Transfer Learning Engineer (Apple)
+Transfer Learning Engineer (Facebook)
+Transfer Learning Engineer (Google)
+Transfer Learning Engineer (Microsoft)
+Transfer Learning Engineer (Tesla)
+Twitter - Software Engineer, Senior Software Engineer, Principal Software Engineer, Staff Software Engineer, Technical Program Manager, Engineering Manager, Director of Engineering, Vice President of Engineering
+Twitter/X:
+Twitter: SDE, SDE II, Senior SDE, Principal SDE, Staff SDE
+UI Designer
+UI Developer
+UX Designer
+UX Researcher
+UX Researcher II
+UX Researcher III
+UX Researcher IV
+UX Researcher V
+Uber - Software Engineer, Senior Software Engineer, Principal Software Engineer, Staff Software Engineer, Technical Program Manager, Engineering Manager, Director of Engineering, Vice President of Engineering
+Uber:
+Uber: SDE, SDE II, Senior SDE, Principal SDE, Staff SDE
+Unsupervised Learning Engineer
+Unsupervised Learning Engineer (Amazon)
+Unsupervised Learning Engineer (Apple)
+Unsupervised Learning Engineer (Facebook)
+Unsupervised Learning Engineer (Google)
+Unsupervised Learning Engineer (Microsoft)
+Unsupervised Learning Engineer (Tesla)
+User Acceptance Testing (UAT) Engineer
+VLSI Engineer
+VMware - Software Engineer, Senior Software Engineer, Principal Software Engineer, Staff Software Engineer, Technical Program Manager, Engineering Manager, Director of Engineering, Vice President of Engineering
+VP of Cloud Engineering
+VP of Data Science
+VP of Data Science (Amazon)
+VP of Data Science (Apple)
+VP of Data Science (Facebook)
+VP of Data Science (Google)
+VP of Data Science (Microsoft)
+VP of Data Science (Tesla)
+VP of DevOps Engineering
+VP of Engineering
+VP of Infrastructure Engineering
+VP of Machine Learning
+VP of Product
+VP of Product Management
+VP of Quality Assurance
+VP of Systems Engineering
+Vice President of Mobile Engineering
+Vice President of Mobile Product
+Vue.js Developer
+Web Developer
+Web QA Engineer
+iOS Developer

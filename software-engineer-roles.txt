@@ -1,0 +1,18 @@
+# Software Engineering Roles
+# Generated on 2025-08-26T09:38:48.436Z
+
+Software Engineer
+Frontend Engineer
+Backend Engineer
+Full-Stack Developer
+Senior Software Engineer
+DevOps Engineer
+Quality Assurance Engineer
+Site Reliability Engineer
+Test Automation Engineer
+Manual QA Tester
+SDET (Software Development Engineer in Test)
+QA Analyst
+Test Lead
+Performance Test Engineer
+Security Test Engineer

@@ -59,7 +59,9 @@ export class ResumesAiService {
           }
         })
       }
-    } catch {}
+    } catch {
+      // Ignore LinkedIn API errors
+    }
 
     if (input?.html && input.html.trim()) {
       const htmlSnippet = input.html.slice(0, 8000)

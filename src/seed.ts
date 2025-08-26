@@ -18,7 +18,9 @@ function slugifyFromUrl(name: string, url: string): string {
     if (idx >= 0 && parts[idx + 1]) {
       return parts[idx + 1]
     }
-  } catch {}
+  } catch {
+    // Ignore URL parsing errors
+  }
   return name
     .toLowerCase()
     .replace(/[^a-z0-9\s-]/g, '')
@@ -57,7 +59,7 @@ function parseSeedMarkdown(content: string): ParsedProblem[] {
       continue
     }
 
-    const problemMatch = line.match(/^\-\s+\[(.+?)\]\((https?:[^\)]+)\)\s+\-\s+(Easy|Medium|Hard)\s*$/)
+    const problemMatch = line.match(/^-\s+\[(.+?)\]\((https?:[^)]+)\)\s+-\s+(Easy|Medium|Hard)\s*$/)
     if (problemMatch && currentTopic && currentSubtopic) {
       const name = problemMatch[1].trim()
       const url = problemMatch[2].trim()

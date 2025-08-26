@@ -270,7 +270,9 @@ export class OpenAIProvider implements AIProvider {
                 .filter((s: any) => s.role),
             };
           }
-        } catch {}
+        } catch {
+          // Ignore parsing errors for candidate JSON
+        }
       }
       return null;
     }

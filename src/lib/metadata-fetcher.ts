@@ -34,7 +34,7 @@ function parseCompanyNameFromTitle(rawTitle: string): string {
   const title = rawTitle.trim()
   // Split by any of the separators: | or dashes (-, –, —), choose the shortest segment
   const parts = title
-    .split(/\s*(?:\||[\-–—])\s*/)
+    .split(/\s*(?:\||[-–—])\s*/)
     .map((p) => cleanSegment(p))
     .filter(Boolean)
 

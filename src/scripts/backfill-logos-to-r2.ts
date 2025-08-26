@@ -58,8 +58,7 @@ async function backfillCompanies(r2: R2StorageService | null, limit = 0, dryRun 
         continue
       }
       // Skip - logo_blob_base64 column has been dropped, logos are now handled via R2 directly
-      continue
-      success++
+      // success++ // Removed as this is unreachable due to continue
     } catch (e) {
       console.warn(`Failed to backfill company ${c.id} (${c.website_url}):`, e)
     }
@@ -88,8 +87,7 @@ async function backfillPlatforms(r2: R2StorageService | null, limit = 0, dryRun 
         continue
       }
       // Skip - logo_blob_base64 column has been dropped, logos are now handled via R2 directly
-      continue
-      success++
+      // success++ // Removed as this is unreachable due to continue
     } catch (e) {
       console.warn(`Failed to backfill platform ${p.id} (${p.url}):`, e)
     }
