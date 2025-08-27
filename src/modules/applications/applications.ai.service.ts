@@ -10,6 +10,7 @@ export type JDExtraction = {
   // Hosting platform (job board / ATS) inferred from the page URL or branding like Instahyre/LinkedIn/Lever/Greenhouse/Workday, not the employer
   platform_name?: string
   platform_url?: string
+  contacts?: Array<{ name?: string; email?: string; phone?: string; title?: string; source?: string }>
   compensation?: {
     fixed_min_lpa?: number | null
     fixed_max_lpa?: number | null
@@ -61,6 +62,7 @@ export class ApplicationsAiService {
         '  job_url?: string,',
         '  platform_name?: string,',
         '  platform_url?: string,',
+        '  contacts?: Array<{ name?: string; email?: string; phone?: string; title?: string; source?: string }>,',
         '  compensation?: { fixed_min_lpa?: number|null, fixed_max_lpa?: number|null, var_min_lpa?: number|null, var_max_lpa?: number|null, note?: string|null } | null,',
         '  notes?: string[],',
         '  raw_text_excerpt?: string',
@@ -71,6 +73,7 @@ export class ApplicationsAiService {
         '- company_website_url should be the employer’s official site if explicitly present.',
         '- job_url if the JD shows a link.',
         '- platform (platform_name/platform_url) is the HOSTING site (job board/ATS) like Instahyre/LinkedIn/Lever/Greenhouse/Workday; it is NOT the employer. Prefer the browser/page URL host if visible. If both employer and platform appear, set employer to company_* and platform_* to the hosting site.',
+        '- contacts: if recruiter details (name, phone, email, company) are present in any image, extract one or more entries with best-effort fields.',
         '- notes: up to 3 short bullets with key requirements or highlights.',
         '- Return VALID JSON only with no markdown code fences.'
       ].join('\n') }

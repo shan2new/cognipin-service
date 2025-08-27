@@ -259,6 +259,23 @@ export class ApplicationsController {
       notes: (data.notes as any) ?? [],
     })
 
+    // If we detected recruiter contacts, attach them to the draft as embedded notes for now
+    // We will persist them as ApplicationContacts when committing the draft
+    const contacts = Array.isArray((data as any).contacts) ? (data as any).contacts : []
+    if (contacts.length) {
+      try {
+        const extra = contacts
+          .map((c: any) => [c.name, c.title, c.email, c.phone].filter(Boolean).join(' • '))
+          .filter(Boolean)
+        if (extra.length) {
+          const d = await this.drafts.getDraft(user.userId, (draft as any).id)
+          await this.drafts.updateDraft(user.userId, (draft as any).id, {
+            notes: [...(d?.notes || []), ...extra].slice(0, 10)
+          })
+        }
+      } catch {}
+    }
+
     return { draft_id: (draft as any).id }
   }
 
@@ -286,7 +303,9 @@ export class ApplicationsController {
 
   @Post('drafts/:id/commit')
   async commitDraft(@CurrentUser() user: RequestUser, @Param('id') id: string) {
-    return this.drafts.commitDraft(user.userId, id)
+    const app = await this.drafts.commitDraft(user.userId, id)
+    // TODO: when we move contacts into draft table explicitly, we can persist to application_contact here.
+    return app
   }
 }
 
