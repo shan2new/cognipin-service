@@ -7,16 +7,23 @@ import { ApplicationNote } from '../../schema/application-note.entity'
 import { Company } from '../../schema/company.entity'
 import { ApplicationsController } from './applications.controller'
 import { ApplicationsService } from './applications.service'
+import { ApplicationsAiService } from './applications.ai.service'
+import { ApplicationDraft } from '../../schema/application-draft.entity'
+import { ApplicationDraftService } from './applications.draft.service'
 import { ApplicationQASnapshot } from '../../schema/application-qa-snapshot.entity'
 import { StageHistory } from '../../schema/stage-history.entity'
 import { ApplicationContact } from '../../schema/application-contact.entity'
 import { Conversation } from '../../schema/conversation.entity'
 import { InterviewRound } from '../../schema/interview-round.entity'
 import { R2StorageService } from '../../lib/r2-storage.service'
+import { CompaniesModule } from '../companies/companies.module'
+import { PlatformsModule } from '../platforms/platforms.module'
 
 @Module({
   imports: [
     ConfigModule,
+    CompaniesModule,
+    PlatformsModule,
     TypeOrmModule.forFeature([
       Application,
       ApplicationCompensation,
@@ -27,10 +34,11 @@ import { R2StorageService } from '../../lib/r2-storage.service'
       ApplicationNote,
       Conversation,
       InterviewRound,
+      ApplicationDraft,
     ]),
   ],
   controllers: [ApplicationsController],
-  providers: [ApplicationsService, R2StorageService],
+  providers: [ApplicationsService, R2StorageService, ApplicationsAiService, ApplicationDraftService],
   exports: [ApplicationsService],
 })
 export class ApplicationsModule {}
