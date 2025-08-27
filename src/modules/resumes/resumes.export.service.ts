@@ -84,7 +84,7 @@ export class ResumesExportService {
       <h1>${escapeHtml(resume?.personal_info?.fullName || 'Your Name')}</h1>
       <p class="muted">${escapeHtml(resume?.personal_info?.email || '')} ${escapeHtml(resume?.personal_info?.phone || '')}</p>
     </div>
-    ${summary ? `<h2>Professional Summary</h2><p>${escapeHtml(summary)}</p>` : ''}
+    ${summary ? `<h2>Summary</h2><p>${escapeHtml(summary)}</p>` : ''}
     ${experience.length ? `<h2>Work Experience</h2><ul>${experience.map((i: any) => `<li>${escapeHtml(i?.text || '')}</li>`).join('')}</ul>` : ''}
     ${projects.length ? `<h2>Projects</h2><ul>${projects.map((i: any) => `<li>${escapeHtml(i?.text || '')}</li>`).join('')}</ul>` : ''}
     ${education.length ? `<h2>Education</h2><ul>${education.map((i: any) => `<li>${escapeHtml(i?.text || '')}</li>`).join('')}</ul>` : ''}

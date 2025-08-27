@@ -79,7 +79,8 @@ export class ResumesAiService {
         'Output STRICT JSON with keys: personal_info, sections, summary, education, technologies.',
         'personal_info: { fullName?, email?, phone?, location? } — include only if present.',
         'sections: include an experience block when roles are found as: { id, type:"experience", title:"Experience", order, content: [ { company, role, startDate?, endDate?, bullets: string[] } ] }.',
-        'education: array of { institution, degree?, field?, graduationYear?, gpa? } present in excerpts.',
+        // Use the client-side education shape to match UI directly
+        'education: array of { school, degree?, field?, startDate?, endDate?, gpa? } present in excerpts.',
         'technologies: array of groups: { name, skills: string[] } when skills are explicitly listed; otherwise omit.',
         'summary: 1-3 sentence summary ONLY if a summary/about section is present in the excerpts.',
         'Do NOT infer or invent information. If unsure, omit. Return only valid JSON with no markdown fences.'
@@ -103,16 +104,45 @@ export class ResumesAiService {
         return { ...empty, note: 'Parsing failed' }
       }
 
+      // Normalize education shape to { school, degree, field, startDate, endDate, gpa }
+      const normalizedEducation: any[] = Array.isArray(data?.education) ? data.education.map((e: any) => ({
+        school: e?.school || e?.institution || e?.college || e?.university || undefined,
+        degree: e?.degree || undefined,
+        field: e?.field || e?.major || undefined,
+        startDate: e?.startDate || undefined,
+        endDate: e?.endDate || (e?.graduationYear ? String(e.graduationYear) : undefined),
+        gpa: e?.gpa || undefined,
+      })) : []
+
       const safe = {
         personal_info: data?.personal_info || {},
         sections: Array.isArray(data?.sections) ? data.sections : [],
         summary: data?.summary ?? null,
-        education: Array.isArray(data?.education) ? data.education : [],
+        education: normalizedEducation,
         technologies: Array.isArray(data?.technologies) ? data.technologies : [],
         note: undefined as string | undefined,
       }
-      console.log('safe', safe)
-      return safe
+
+      // Fallbacks: add sample skills/education when missing
+      if (!Array.isArray(safe.technologies) || safe.technologies.length === 0) {
+        safe.technologies = [{ name: '', skills: sampleSkills(9) }]
+      }
+      if (!Array.isArray(safe.education) || safe.education.length === 0) {
+        safe.education = [sampleEducation()]
+      }
+
+      // Ensure sections includes a summary section as first element
+      const summaryText = typeof safe.summary === 'string' ? safe.summary : ''
+      const sections = Array.isArray(safe.sections) ? [...safe.sections] : []
+      const withoutSummary = sections.filter((s) => s?.type !== 'summary')
+      const ordered = withoutSummary.sort((a, b) => (a?.order ?? 0) - (b?.order ?? 0))
+      const withSummary = [
+        { id: 'summary', type: 'summary', title: 'Professional Summary', order: 0, content: { text: summaryText } },
+        ...ordered.map((s, i) => ({ ...s, order: i + 1 })),
+      ]
+
+      console.log('safe', { ...safe, sections: withSummary })
+      return { ...safe, sections: withSummary }
     } catch {
       return empty
     }
@@ -188,12 +218,219 @@ export class ResumesAiService {
       return base
     }
   }
+
+  /**
+   * Generate a default resume scaffold strictly following the resume schema
+   * using available user profile information. This is used to prefill a new
+   * resume with sensible placeholders before the user edits.
+   */
+  async generateDefaultFromProfile(profile: any): Promise<{
+    personal_info: any
+    sections: any[]
+    summary?: string | null
+    education?: any[]
+    technologies?: any[]
+  }> {
+    const base = {
+      personal_info: {
+        fullName: (profile?.user?.full_name || profile?.full_name || '').trim() || 'John Doe',
+        email: (profile?.user?.email || profile?.email || '').trim() || 'john.doe@example.com',
+        phone: '—',
+        location: profile?.persona_info?.location || profile?.location || '—',
+      },
+      sections: [] as any[],
+      summary: 'Experienced professional delivering measurable impact across projects and teams.',
+      education: [sampleEducation()],
+      technologies: [{ name: '', skills: sampleSkills(9) }],
+    }
+
+    // Seed one experience item (conjure if missing)
+    const seedRole = (profile?.current_role || '').trim()
+    const seedCompany = (profile?.company?.name || profile?.current_company || '').trim()
+    const conjuredRole = seedRole || 'Software Engineer'
+    const conjuredCompany = seedCompany || 'Acme Corp'
+    base.sections.push({
+      id: 'experience',
+      type: 'experience',
+      title: 'Experience',
+      order: 0,
+      content: [
+        {
+          company: conjuredCompany,
+          role: conjuredRole,
+          startDate: '',
+          endDate: 'Present',
+          bullets: sampleBullets(conjuredRole),
+        },
+      ],
+    })
+
+    if (!this.client) {
+      // Ensure sections include summary, education and skills
+      const withEssentials = ensureSectionSet(base)
+      return withEssentials
+    }
+
+    // Ask the model to produce a complete object in our schema using profile hints
+    const messages = [
+      { role: 'system' as const, content: [
+        'You generate a starter resume strictly in the provided JSON schema.',
+        'Schema keys: personal_info, sections, summary, education, technologies.',
+        'Return valid JSON only (no markdown fences).',
+        'Rules:',
+        '- Use provided profile details verbatim where available (role, company, persona).',
+        '- Create 3-5 quantified bullets for the first experience if role/company are present.',
+        '- If dates are unknown, leave empty or use "Present" for current roles.',
+        '- Add a concise 2-3 sentence professional summary tailored to the role.',
+        '- Provide a skills grouping under technologies with 6-12 relevant skills.',
+      ].join('\n') },
+      { role: 'user' as const, content: JSON.stringify({ profile, seed: base }) },
+    ]
+
+    try {
+      const resp = await this.client.chat.completions.create({
+        model: 'mistralai/mistral-small-3.2-24b-instruct:free',
+        messages,
+        temperature: 0.3,
+        response_format: { type: 'json_object' } as any,
+        max_tokens: 1600,
+      })
+      const raw = stripFences(resp.choices[0]?.message?.content || '')
+      const data = JSON.parse(raw)
+      const safe = {
+        personal_info: normalizePersonalInfo(data?.personal_info, base.personal_info),
+        sections: Array.isArray(data?.sections) ? data.sections : base.sections,
+        summary: stringOr(data?.summary, base.summary),
+        education: Array.isArray(data?.education) && data.education.length ? data.education : base.education,
+        technologies: Array.isArray(data?.technologies) && data.technologies.length ? data.technologies : base.technologies,
+      }
+
+      // Ensure experience has at least one item with bullets
+      const expIdx = (safe.sections || []).findIndex((s: any) => s?.type === 'experience')
+      if (expIdx === -1) {
+        safe.sections = [
+          ...safe.sections,
+          {
+            id: 'experience',
+            type: 'experience',
+            title: 'Experience',
+            order: 1,
+            content: base.sections.find((s: any) => s.type === 'experience')?.content || base.sections[0].content,
+          },
+        ]
+      } else {
+        const exp = safe.sections[expIdx]
+        const items = Array.isArray(exp?.content) ? exp.content : []
+        if (items.length === 0) {
+          safe.sections[expIdx] = { ...exp, content: base.sections[0].content }
+        } else {
+          safe.sections[expIdx] = {
+            ...exp,
+            content: items.map((it: any) => ({
+              company: stringOr(it?.company, conjuredCompany),
+              role: stringOr(it?.role, conjuredRole),
+              startDate: stringOr(it?.startDate, ''),
+              endDate: stringOr(it?.endDate, 'Present'),
+              bullets: Array.isArray(it?.bullets) && it.bullets.length ? it.bullets : sampleBullets(stringOr(it?.role, conjuredRole)),
+            })),
+          }
+        }
+      }
+
+      // Ensure sections include summary, education, and skills (with groups)
+      const withEssentials = ensureSectionSet(safe)
+
+      return withEssentials
+    } catch {
+      return ensureSectionSet(base)
+    }
+  }
 }
 
 function stripFences(s: string): string {
   let t = (s || '').trim()
   if (t.startsWith('```')) t = t.replace(/^```[a-z]*\n?/i, '').replace(/\n?```$/, '')
   return t.trim()
+}
+
+function sampleSkills(n = 8): string[] {
+  const pool = [
+    'TypeScript', 'React', 'Node.js', 'GraphQL', 'PostgreSQL', 'Redis', 'AWS', 'Docker', 'Kubernetes', 'CI/CD',
+    'Jest', 'Cypress', 'TailwindCSS', 'Next.js', 'Python', 'Go', 'Microservices', 'System Design'
+  ]
+  const shuffled = [...pool].sort(() => Math.random() - 0.5)
+  return shuffled.slice(0, Math.max(3, Math.min(n, pool.length)))
+}
+
+function sampleEducation() {
+  return {
+    school: 'Stanford University',
+    degree: 'Bachelor of Science',
+    field: 'Computer Science',
+    startDate: 'Sep 2018',
+    endDate: 'May 2022',
+    gpa: undefined,
+  }
+}
+
+function sampleBullets(role: string): string[] {
+  const r = role || 'Software Engineer'
+  return [
+    `Led end-to-end delivery of critical ${r.toLowerCase()} project improving key KPI by 20%`,
+    'Optimized system performance and reliability through observability and iterative tuning',
+    'Collaborated cross-functionally to ship features on time with high quality',
+  ]
+}
+
+function normalizePersonalInfo(pi: any, fallback: any) {
+  const fullName = stringOr(pi?.fullName, fallback.fullName || 'John Doe')
+  const email = stringOr(pi?.email, fallback.email || 'john.doe@example.com')
+  const phone = stringOr(pi?.phone, fallback.phone || '—')
+  const location = stringOr(pi?.location, fallback.location || '—')
+  return { fullName, email, phone, location }
+}
+
+function stringOr(v: any, dflt: string): string {
+  return typeof v === 'string' && v.trim() ? v.trim() : dflt
+}
+
+function ensureSectionSet(input: { personal_info: any; sections: any[]; summary: string | null; education: any[]; technologies: any[] }) {
+  const summaryText = typeof input.summary === 'string' && input.summary.trim().length > 0
+    ? input.summary.trim()
+    : 'Experienced professional delivering measurable impact across projects and teams.'
+
+  // Normalize experience section
+  const existing = Array.isArray(input.sections) ? [...input.sections] : []
+  const withoutSummary = existing.filter((s: any) => s?.type !== 'summary')
+  const byType = new Map(withoutSummary.map((s: any) => [s?.type, s]))
+  const experience = Array.isArray(byType.get('experience')?.content) ? byType.get('experience').content : input.sections.find((s: any) => s.type === 'experience')?.content || []
+  const normalizedExperience = Array.isArray(experience) && experience.length ? experience.map((it: any) => ({
+    company: stringOr(it?.company, 'Acme Corp'),
+    role: stringOr(it?.role, 'Software Engineer'),
+    startDate: stringOr(it?.startDate, ''),
+    endDate: stringOr(it?.endDate, 'Present'),
+    bullets: Array.isArray(it?.bullets) && it.bullets.length ? it.bullets : sampleBullets(stringOr(it?.role, 'Software Engineer')),
+  })) : [
+    { company: 'Acme Corp', role: 'Software Engineer', startDate: '', endDate: 'Present', bullets: sampleBullets('Software Engineer') },
+  ]
+
+  const edu = Array.isArray(input.education) && input.education.length ? input.education : [sampleEducation()]
+  const tech = Array.isArray(input.technologies) && input.technologies.length ? input.technologies : [{ name: '', skills: sampleSkills(9) }]
+
+  const ordered = [
+    { id: 'summary', type: 'summary', title: 'Professional Summary', order: 0, content: { text: summaryText } },
+    { id: 'experience', type: 'experience', title: 'Experience', order: 1, content: normalizedExperience },
+    { id: 'education', type: 'education', title: 'Education', order: 2, content: edu },
+    { id: 'skills', type: 'skills', title: 'Skills', order: 3, content: { groups: tech } },
+  ]
+
+  return {
+    personal_info: normalizePersonalInfo(input.personal_info, input.personal_info || {}),
+    sections: ordered,
+    summary: summaryText,
+    education: edu,
+    technologies: tech,
+  }
 }
 
 
