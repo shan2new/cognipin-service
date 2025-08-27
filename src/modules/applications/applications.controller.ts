@@ -15,6 +15,7 @@ import { FilesInterceptor } from '@nestjs/platform-express'
 import { ClerkGuard } from '../auth/clerk.guard'
 import { ApplicationsService } from './applications.service'
 import { ApplicationsAiService } from './applications.ai.service'
+import { ApplicationsQARehearsalService } from './applications.qa-rehearsal.service'
 import { ApplicationDraftService } from './applications.draft.service'
 import { CompaniesService } from '../companies/companies.service'
 import { PlatformsService } from '../platforms/platforms.service'
@@ -27,6 +28,7 @@ export class ApplicationsController {
   constructor(
     private readonly svc: ApplicationsService,
     private readonly ai: ApplicationsAiService,
+    private readonly qaRehearsal: ApplicationsQARehearsalService,
     private readonly drafts: ApplicationDraftService,
     private readonly companies: CompaniesService,
     private readonly platforms: PlatformsService,
@@ -306,6 +308,21 @@ export class ApplicationsController {
     const app = await this.drafts.commitDraft(user.userId, id)
     // TODO: when we move contacts into draft table explicitly, we can persist to application_contact here.
     return app
+  }
+
+  // Q&A Rehearsal endpoint
+  @Post(':id/qa-rehearsal')
+  async generateQARehearsal(@CurrentUser() user: RequestUser, @Param('id') id: string) {
+    const app = await this.svc.getById(user.userId, id)
+    if (!app.qa_snapshot) {
+      return { note: 'No QA data available for this application. Add your responses in the application details.' }
+    }
+    
+    return this.qaRehearsal.generateRehearsalResponses(
+      app.qa_snapshot,
+      app.role,
+      app.company?.name
+    )
   }
 }
 

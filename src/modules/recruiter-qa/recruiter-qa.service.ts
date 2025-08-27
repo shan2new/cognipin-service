@@ -2,10 +2,14 @@ import { Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { RecruiterQA } from '../../schema/recruiter-qa.entity'
+import { RedisService } from '../../lib/redis.service'
 
 @Injectable()
 export class RecruiterQAService {
-  constructor(@InjectRepository(RecruiterQA) private readonly repo: Repository<RecruiterQA>) {}
+  constructor(
+    @InjectRepository(RecruiterQA) private readonly repo: Repository<RecruiterQA>,
+    private readonly redis: RedisService,
+  ) {}
 
   async list(userId: string) {
     const items = await this.repo.find({ where: { user_id: userId } })
@@ -42,6 +46,10 @@ export class RecruiterQAService {
         await this.repo.save(this.repo.create({ user_id: userId, key: u.key as any, answer: u.value }))
       }
     }
+    
+    // Invalidate QA rehearsal cache when QA data is updated
+    await this.redis.delPattern(`qa_rehearsal:${userId}:*`)
+    
     return this.list(userId)
   }
 }

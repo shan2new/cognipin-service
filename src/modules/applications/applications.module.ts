@@ -8,6 +8,7 @@ import { Company } from '../../schema/company.entity'
 import { ApplicationsController } from './applications.controller'
 import { ApplicationsService } from './applications.service'
 import { ApplicationsAiService } from './applications.ai.service'
+import { ApplicationsQARehearsalService } from './applications.qa-rehearsal.service'
 import { ApplicationDraft } from '../../schema/application-draft.entity'
 import { ApplicationDraftService } from './applications.draft.service'
 import { ApplicationQASnapshot } from '../../schema/application-qa-snapshot.entity'
@@ -38,7 +39,7 @@ import { PlatformsModule } from '../platforms/platforms.module'
     ]),
   ],
   controllers: [ApplicationsController],
-  providers: [ApplicationsService, R2StorageService, ApplicationsAiService, ApplicationDraftService],
+  providers: [ApplicationsService, R2StorageService, ApplicationsAiService, ApplicationsQARehearsalService, ApplicationDraftService],
   exports: [ApplicationsService],
 })
 export class ApplicationsModule {}
