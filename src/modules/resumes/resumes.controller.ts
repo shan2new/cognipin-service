@@ -1,9 +1,10 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, UseGuards, UploadedFile, UseInterceptors, Res, Query } from '@nestjs/common'
+import { Controller, Get, Post, Put, Delete, Param, Body, UseGuards, UploadedFile, UseInterceptors, Res, Query, Header, Logger } from '@nestjs/common'
 import { ResumesService } from './resumes.service'
 // Import type only to avoid ts-node resolution issues in lint stage
 type Resume = any
 import { ResumesAiService } from './resumes.ai.service'
 import { ResumesExportService } from './resumes.export.service'
+import { ResumesParseService } from './resumes.parse.service'
 import { ProfileService } from '../profile/profile.service'
 import type { Response } from 'express'
 import { FileInterceptor } from '@nestjs/platform-express'
@@ -20,7 +21,9 @@ export class ResumesController {
     private readonly exporter: ResumesExportService,
     private readonly profileSvc: ProfileService,
     private readonly redis: RedisService,
+    private readonly parser: ResumesParseService,
   ) {}
+  private readonly logger = new Logger(ResumesController.name)
 
   @Get()
   async findAll(@CurrentUser() user: RequestUser) {
@@ -148,10 +151,20 @@ export class ResumesController {
   // --- Import --- (LinkedIn import removed)
 
   @Post('import/pdf')
+  @Header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+  @Header('Pragma', 'no-cache')
+  @Header('Expires', '0')
+  @Header('Vary', 'Authorization')
   @UseInterceptors(FileInterceptor('file'))
   async importPdf(@CurrentUser() _user: RequestUser, @UploadedFile() file?: any) {
-    // TODO: run OCR or structured PDF parser service
-    return { sections: [], personal_info: {}, note: `Received file ${file?.originalname || 'unknown'}` }
+    const start = Date.now()
+    const name = (file && typeof file.originalname === 'string') ? file.originalname : 'unknown'
+    const size = (file && typeof file.size === 'number') ? file.size : (file?.buffer?.length || undefined)
+    this.logger.log(`[ImportPDF] start file=${name} size=${size ?? 'n/a'}`)
+    const data = await this.parser.parsePdf(file)
+    const secCount = Array.isArray((data as any)?.sections) ? (data as any).sections.length : 0
+    this.logger.log(`[ImportPDF] done file=${name} duration_ms=${Date.now() - start} sections=${secCount}`)
+    return data
   }
 
   // --- Export ---

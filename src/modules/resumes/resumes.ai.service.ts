@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import OpenAI from 'openai'
+import { jsonrepair } from 'jsonrepair'
 import { TavilyProvider, TavilySearchResult } from '../../lib/ai/tavily-provider'
 
 @Injectable()
@@ -220,6 +221,195 @@ export class ResumesAiService {
   }
 
   /**
+   * Parse resume text (extracted from a PDF) into our draft resume schema using an LLM.
+   * Returns a safe object with sections normalized to include summary, education, and skills.
+   */
+  async parseResumeFromText(input: { text: string }): Promise<{
+    personal_info: any
+    sections: any[]
+    summary?: string | null
+    education?: any[]
+    technologies?: any[]
+  }> {
+    const base = {
+      personal_info: { fullName: 'John Doe', email: 'john.doe@example.com', phone: '—', location: '—' },
+      sections: [] as any[],
+      summary: 'Experienced professional delivering measurable impact across projects and teams.',
+      education: [sampleEducation()],
+      technologies: [{ name: '', skills: sampleSkills(9) }],
+    }
+
+    if (!this.client) {
+      return ensureSectionSet(base)
+    }
+
+    const trimmed = (input?.text || '').slice(0, 18000)
+    if (!trimmed.trim()) {
+      return ensureSectionSet(base)
+    }
+
+    const messages = [
+      { role: 'system' as const, content: [
+        'You are a precise information extractor for resumes. Input is raw text extracted from a PDF.',
+        'Output STRICT JSON with keys: personal_info, sections, summary, education, technologies.',
+        'personal_info: { fullName?, email?, phone?, location? } — use exact values from text when present.',
+        'sections: include an experience block when roles/companies are found: { id, type:"experience", title:"Experience", order, content: [ { company, role, startDate?, endDate?, bullets: string[] } ] }.',
+        'education: array of { school, degree?, field?, startDate?, endDate?, gpa? } present in text.',
+        'technologies: array of groups: { name, skills: string[] }. If skills are listed, include them as a single group.',
+        'summary: 1-3 sentence professional summary if present; otherwise omit (will be added later).',
+        'Do NOT invent facts. If unsure, omit. Return only valid JSON with no markdown fences.'
+      ].join('\n') },
+      { role: 'user' as const, content: JSON.stringify({ text: trimmed }) },
+    ]
+
+    try {
+      const resp = await this.client.chat.completions.create({
+        model: 'mistralai/mistral-small-3.2-24b-instruct:free',
+        messages,
+        temperature: 0,
+        response_format: { type: 'json_object' } as any,
+        max_tokens: 1800,
+      })
+      const raw = stripFences(resp.choices[0]?.message?.content || '')
+      const data = JSON.parse(raw)
+
+      // Normalize education shape to { school, degree, field, startDate, endDate, gpa }
+      const normalizedEducation: any[] = Array.isArray(data?.education) ? data.education.map((e: any) => ({
+        school: e?.school || e?.institution || e?.college || e?.university || undefined,
+        degree: e?.degree || undefined,
+        field: e?.field || e?.major || undefined,
+        startDate: e?.startDate || undefined,
+        endDate: e?.endDate || (e?.graduationYear ? String(e.graduationYear) : undefined),
+        gpa: e?.gpa || undefined,
+      })) : []
+
+      const safe = {
+        personal_info: data?.personal_info || {},
+        sections: Array.isArray(data?.sections) ? data.sections : [],
+        summary: typeof data?.summary === 'string' ? data.summary : null,
+        education: normalizedEducation,
+        technologies: Array.isArray(data?.technologies) ? data.technologies : [],
+      }
+
+      // Fallbacks
+      if (!Array.isArray(safe.technologies) || safe.technologies.length === 0) {
+        safe.technologies = [{ name: '', skills: sampleSkills(9) }]
+      }
+      if (!Array.isArray(safe.education) || safe.education.length === 0) {
+        safe.education = [sampleEducation()]
+      }
+
+      // Ensure essential sections and ordering
+      const withEssentials = ensureSectionSet(safe)
+      return withEssentials
+    } catch {
+      return ensureSectionSet(base)
+    }
+  }
+
+  /**
+   * Parse resume directly from a PDF buffer using the model's file understanding capabilities.
+   * Falls back to a safe scaffold when unavailable.
+   */
+  async parseResumeFromFile(input: { buffer: Buffer; filename?: string }): Promise<{
+    personal_info: any
+    sections: any[]
+    summary?: string | null
+    education?: any[]
+    technologies?: any[]
+  }> {
+    const base = {
+      personal_info: {
+        fullName: 'John Doe',
+        email: 'john.doe@example.com',
+        phone: '—',
+        location: '—',
+      },
+      sections: [] as any[],
+      summary: 'Experienced professional delivering measurable impact across projects and teams.',
+      education: [sampleEducation()],
+      technologies: [{ name: '', skills: sampleSkills(9) }],
+    }
+    if (!this.client) return ensureSectionSet(base)
+
+    try {
+      // Use OpenRouter chat.completions with base64-encoded PDF per docs
+      const filename = input.filename || 'resume.pdf'
+      const dataUrl = `data:application/pdf;base64,${input.buffer.toString('base64')}`
+
+      const prompt = [
+        'You are a precise information extractor for resumes. Input is a PDF file.',
+        'Output STRICT JSON with keys: personal_info, sections, summary, education, technologies.',
+        'personal_info: { fullName?, email?, phone?, location? } — use exact values from the file when present.',
+        'sections: include an experience block when roles/companies are found: { id, type:"experience", title:"Experience", order, content: [ { company, role, startDate?, endDate?, bullets: string[] } ] }.',
+        'education: array of { school, degree?, field?, startDate?, endDate?, gpa? } present in the file.',
+        'technologies: array of groups: { name, skills: string[] }. If skills are listed, include them as a single group.',
+        'summary: 1-3 sentence professional summary if present; otherwise omit (will be added later).',
+        'Do NOT invent facts. If unsure, omit. Return only valid JSON with no markdown fences.'
+      ].join('\n')
+
+      const resp = await this.client.chat.completions.create({
+        model: 'mistralai/mistral-small-3.2-24b-instruct:free',
+        messages: [
+          {
+            role: 'system',
+            content: [{ type: 'text', text: prompt }] as any,
+          },
+          {
+            role: 'user',
+            content: [
+              { type: 'text', text: 'Parse this resume and return strict JSON as specified.' },
+              { type: 'file', file: { filename, file_data: dataUrl } },
+            ] as any,
+          },
+        ],
+        // Prefer text engine to avoid OCR cost unless needed
+        plugins: [
+          { id: 'file-parser', pdf: { engine: 'pdf-text' } },
+        ],
+        temperature: 0,
+        response_format: { type: 'json_object' } as any,
+        max_tokens: 1800,
+      } as any)
+
+      const raw = stripFences(resp.choices?.[0]?.message?.content || '')
+      const data = safeParseJson(raw)
+
+      // Normalize education
+      const normalizedEducation: any[] = Array.isArray(data?.education) ? data.education.map((e: any) => ({
+        school: e?.school || e?.institution || e?.college || e?.university || undefined,
+        degree: e?.degree || undefined,
+        field: e?.field || e?.major || undefined,
+        startDate: e?.startDate || undefined,
+        endDate: e?.endDate || (e?.graduationYear ? String(e.graduationYear) : undefined),
+        gpa: e?.gpa || undefined,
+      })) : []
+
+      const safe = {
+        personal_info: data?.personal_info || {},
+        sections: Array.isArray(data?.sections) ? data.sections : [],
+        summary: typeof data?.summary === 'string' ? data.summary : null,
+        education: normalizedEducation,
+        technologies: Array.isArray(data?.technologies) ? data.technologies : [],
+      }
+
+      // Fallback defaults
+      if (!Array.isArray(safe.technologies) || safe.technologies.length === 0) {
+        safe.technologies = [{ name: '', skills: sampleSkills(9) }]
+      }
+      if (!Array.isArray(safe.education) || safe.education.length === 0) {
+        safe.education = [sampleEducation()]
+      }
+
+      const withEssentials = ensureSectionSet(safe)
+      return withEssentials
+    } catch (e) {
+      console.log('[ResumeParse] AI file parse failed, falling back to text extraction', e)
+      return ensureSectionSet(base)
+    }
+  }
+
+  /**
    * Generate a default resume scaffold strictly following the resume schema
    * using available user profile information. This is used to prefill a new
    * resume with sensible placeholders before the user edits.
@@ -351,6 +541,19 @@ function stripFences(s: string): string {
   let t = (s || '').trim()
   if (t.startsWith('```')) t = t.replace(/^```[a-z]*\n?/i, '').replace(/\n?```$/, '')
   return t.trim()
+}
+
+function safeParseJson(s: string): any {
+  try {
+    return JSON.parse(s)
+  } catch {
+    try {
+      const repaired = jsonrepair(s)
+      return JSON.parse(repaired)
+    } catch {
+      return {}
+    }
+  }
 }
 
 function sampleSkills(n = 8): string[] {

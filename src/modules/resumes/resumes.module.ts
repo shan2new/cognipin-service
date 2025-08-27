@@ -5,13 +5,14 @@ import { ResumesService } from './resumes.service'
 import { ResumesController } from './resumes.controller'
 import { ResumesAiService } from './resumes.ai.service'
 import { ResumesExportService } from './resumes.export.service'
+import { ResumesParseService } from './resumes.parse.service'
 import { ProfileModule } from '../profile/profile.module'
 import { RedisService } from '../../lib/redis.service'
 
 @Module({
   imports: [TypeOrmModule.forFeature([Resume]), ProfileModule],
   controllers: [ResumesController],
-  providers: [ResumesService, ResumesAiService, ResumesExportService, RedisService],
+  providers: [ResumesService, ResumesAiService, ResumesExportService, ResumesParseService, RedisService],
   exports: [ResumesService],
 })
 export class ResumesModule {}
