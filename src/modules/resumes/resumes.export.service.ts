@@ -11,13 +11,13 @@ export class ResumesExportService {
         {
           children: [
             new Paragraph({
-              children: [new TextRun({ text: resume.name || 'Resume', bold: true, size: 28 })],
+              children: [new TextRun({ text: (resume as any)?.personal_info?.fullName || resume.name || 'Resume', bold: true, size: 28 })],
             }),
+            ...this.contactParas(resume as any),
             ...this.summaryParas(resume as any),
-            ...this.bulletsSection('Experience', ((resume as any).sections || []).find((s: any) => s.type === 'experience')?.content || []),
-            ...this.bulletsSection('Achievements', ((resume as any).sections || []).find((s: any) => s.type === 'achievements')?.content || []),
-            ...this.bulletsSection('Projects', ((resume as any).sections || []).find((s: any) => s.type === 'projects')?.content || []),
-            ...this.bulletsSection('Education', ((resume as any).sections || []).find((s: any) => s.type === 'education')?.content || []),
+            ...this.experienceSection(((resume as any).sections || []).find((s: any) => s.type === 'experience')?.content || []),
+            ...this.educationSection(((resume as any).sections || []).find((s: any) => s.type === 'education')?.content || []),
+            ...this.achievementsSection(((resume as any).sections || []).find((s: any) => s.type === 'achievements')?.content || []),
             ...this.skillsParas(((resume as any).sections || []).find((s: any) => s.type === 'skills')?.content || { groups: [] }),
           ],
         },
@@ -27,13 +27,23 @@ export class ResumesExportService {
     return await Packer.toBuffer(doc)
   }
 
-  async toPdf(resume: Resume): Promise<Buffer> {
+  async toPdf(resume: Resume, bearerToken?: string): Promise<Buffer> {
     const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] })
     try {
       const page = await browser.newPage()
-      const html = this.renderHtml(resume as any)
-      await page.setContent(html, { waitUntil: 'networkidle0' })
-      const pdf = await page.pdf({ format: 'A4', printBackground: true, margin: { top: '0.6in', bottom: '0.6in', left: '0.6in', right: '0.6in' } })
+      const frontend = process.env.FRONTEND_URL || process.env.APP_URL || process.env.WEB_URL
+      if (frontend && bearerToken) {
+        const url = `${frontend.replace(/\/$/, '')}/p/resumes/${(resume as any).id}?token=${encodeURIComponent(bearerToken)}&auto=1`
+        await page.goto(url, { waitUntil: 'networkidle0' })
+      } else {
+        const html = this.renderHtml(resume as any)
+        await page.setContent(html, { waitUntil: 'networkidle0' })
+      }
+      // Force white background and remove visual canvas shadow to avoid dark borders
+      await page.addStyleTag({ content: 'html,body,.document-viewer{background:#ffffff !important;} .resume-document{box-shadow:none !important;background:#ffffff !important;}' })
+      await page.emulateMediaType('print')
+      await page.setViewport({ width: 794, height: 1123, deviceScaleFactor: 2 })
+      const pdf = await page.pdf({ width: '794px', height: '1123px', printBackground: true, margin: { top: '24px', bottom: '24px', left: '24px', right: '24px' } })
       return Buffer.from(pdf)
     } finally {
       await browser.close()
@@ -49,19 +59,76 @@ export class ResumesExportService {
     ]
   }
 
-  private bulletsSection(title: string, items: Array<any>) {
-    if (!items || items.length === 0) return []
-    return [
-      new Paragraph({ children: [new TextRun({ text: title, bold: true })] }),
-      ...items.map((i) => new Paragraph({ text: `• ${i?.text ?? ''}` })),
-    ]
+  private contactParas(resume: any) {
+    const pi = resume?.personal_info || {}
+    const contactParts: string[] = []
+    if (pi.email) contactParts.push(String(pi.email))
+    if (pi.phone) contactParts.push(String(pi.phone))
+    if (pi.location) contactParts.push(String(pi.location))
+    if (contactParts.length === 0) return []
+    return [new Paragraph({ children: [new TextRun({ text: contactParts.join(' • '), color: '666666' })] })]
+  }
+
+  private experienceSection(items: Array<any>) {
+    if (!Array.isArray(items) || items.length === 0) return []
+    const out: Paragraph[] = []
+    out.push(new Paragraph({ children: [new TextRun({ text: 'Work Experience', bold: true })] }))
+    for (const item of items) {
+      const role = item?.role || ''
+      const company = item?.company || ''
+      const start = item?.startDate || ''
+      const end = item?.endDate || ''
+      const header = [role, company && role ? `at ${company}` : company].filter(Boolean).join(' ')
+      const dates = [start, end].filter(Boolean).join(' - ')
+      out.push(new Paragraph({ children: [new TextRun({ text: header, bold: true })] }))
+      if (dates) out.push(new Paragraph({ children: [new TextRun({ text: dates, color: '666666' })] }))
+      const bullets: string[] = Array.isArray(item?.bullets) ? item.bullets : []
+      for (const b of bullets) {
+        if (!b) continue
+        out.push(new Paragraph({ text: `• ${b}` }))
+      }
+    }
+    return out
+  }
+
+  private educationSection(items: Array<any>) {
+    if (!Array.isArray(items) || items.length === 0) return []
+    const out: Paragraph[] = []
+    out.push(new Paragraph({ children: [new TextRun({ text: 'Education', bold: true })] }))
+    for (const item of items) {
+      const school = item?.school || ''
+      const degree = item?.degree || ''
+      const field = item?.field || ''
+      const start = item?.startDate || ''
+      const end = item?.endDate || ''
+      const title = [degree, field].filter(Boolean).join(' in ')
+      const line = [title, school].filter(Boolean).join(', ')
+      const dates = [start, end].filter(Boolean).join(' - ')
+      if (line) out.push(new Paragraph({ children: [new TextRun({ text: line })] }))
+      if (dates) out.push(new Paragraph({ children: [new TextRun({ text: dates, color: '666666' })] }))
+    }
+    return out
+  }
+
+  private achievementsSection(items: Array<any>) {
+    if (!Array.isArray(items) || items.length === 0) return []
+    const out: Paragraph[] = []
+    out.push(new Paragraph({ children: [new TextRun({ text: 'Achievements', bold: true })] }))
+    for (const item of items) {
+      const title = item?.title || ''
+      const desc = item?.description || ''
+      const date = item?.date || ''
+      const head = [title, date].filter(Boolean).join(' — ')
+      if (head) out.push(new Paragraph({ children: [new TextRun({ text: head })] }))
+      if (desc) out.push(new Paragraph({ children: [new TextRun({ text: desc })] }))
+    }
+    return out
   }
 
   private renderHtml(resume: any): string {
     const summary = resume?.sections?.find((s: any) => s.type === 'summary')?.content?.text || ''
     const experience: Array<any> = resume?.sections?.find((s: any) => s.type === 'experience')?.content || []
     const achievements: Array<any> = resume?.sections?.find((s: any) => s.type === 'achievements')?.content || []
-    const projects: Array<any> = resume?.sections?.find((s: any) => s.type === 'projects')?.content || []
     const education: Array<any> = resume?.sections?.find((s: any) => s.type === 'education')?.content || []
     const skills: any = resume?.sections?.find((s: any) => s.type === 'skills')?.content || { groups: [] }
     return `<!doctype html>
@@ -70,35 +137,54 @@ export class ResumesExportService {
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <style>
-      body { font-family: -apple-system, Inter, system-ui, Segoe UI, Roboto, Arial, sans-serif; color: #0a0a0a; }
-      h1 { font-size: 22px; margin: 0 0 8px; }
-      h2 { font-size: 14px; margin: 16px 0 6px; }
-      p, li { font-size: 12px; line-height: 1.5; }
+      :root { --foreground: #111827; --muted: #f4f4f5; --muted-foreground: #6b7280; --border: #e5e7eb; }
+      body { font-family: Inter, -apple-system, system-ui, Segoe UI, Roboto, Arial, sans-serif; color: var(--foreground); background: white; }
+      h1 { font-size: 30px; margin: 0 0 12px; font-weight: 700; }
+      h2 { font-size: 12px; margin: 16px 0 6px; text-transform: uppercase; letter-spacing: 0.12em; font-weight: 600; }
+      p, li { font-size: 14px; line-height: 1.7; color: #374151; }
       ul { margin: 0; padding-left: 16px; }
-      .muted { color: #555; }
-      .header { border-bottom: 1px solid #e5e5e5; padding-bottom: 8px; margin-bottom: 12px; }
+      .muted { color: var(--muted-foreground); }
+      .header { border-bottom: 1px solid var(--border); padding-bottom: 16px; margin-bottom: 24px; text-align: center; }
+      .chip { display: inline-block; padding: 2px 8px; font-size: 12px; border: 1px solid var(--border); background: var(--muted); color: var(--muted-foreground); border-radius: 6px; margin: 2px; }
+      .container { width: 794px; min-height: 1123px; margin: 0 auto; padding: 64px; }
     </style>
   </head>
   <body>
-    <div class="header">
-      <h1>${escapeHtml(resume?.personal_info?.fullName || 'Your Name')}</h1>
-      <p class="muted">${escapeHtml(resume?.personal_info?.email || '')} ${escapeHtml(resume?.personal_info?.phone || '')}</p>
+    <div class="container">
+      <div class="header">
+        <h1>${escapeHtml(resume?.personal_info?.fullName || 'Your Name')}</h1>
+        <p class="muted">${escapeHtml([resume?.personal_info?.email, resume?.personal_info?.phone, resume?.personal_info?.location].filter(Boolean).join(' • '))}</p>
+      </div>
+      ${summary ? `<h2>Professional Summary</h2><p>${escapeHtml(summary)}</p>` : ''}
+      ${experience.length ? `<h2>Work Experience</h2>${experience.map((i: any) => {
+        const header = [i?.role, (i?.company && i?.role) ? `at ${i.company}` : (i?.company || '')].filter(Boolean).join(' ')
+        const dates = [i?.startDate, i?.endDate].filter(Boolean).join(' - ')
+        const bullets = Array.isArray(i?.bullets) ? i.bullets : []
+        return `<p><strong>${escapeHtml(header)}</strong></p>`
+          + (dates ? `<p class="muted">${escapeHtml(dates)}</p>` : '')
+          + (bullets.length ? `<ul>${bullets.map((b: string) => `<li>${escapeHtml(b)}</li>`).join('')}</ul>` : '')
+      }).join('')}` : ''}
+      ${education.length ? `<h2>Education</h2>${education.map((i: any) => {
+        const title = [i?.degree, i?.field].filter(Boolean).join(' in ')
+        const line = [title, i?.school].filter(Boolean).join(', ')
+        const dates = [i?.startDate, i?.endDate].filter(Boolean).join(' - ')
+        return `<p>${escapeHtml(line)}</p>` + (dates ? `<p class="muted">${escapeHtml(dates)}</p>` : '')
+      }).join('')}` : ''}
+      ${achievements.length ? `<h2>Achievements</h2>${achievements.map((i: any) => {
+        const head = [i?.title, i?.date].filter(Boolean).join(' — ')
+        return `<p>${escapeHtml(head)}</p>` + (i?.description ? `<p>${escapeHtml(i.description)}</p>` : '')
+      }).join('')}` : ''}
+      ${Array.isArray(skills.groups) && skills.groups.length ? `<h2>Skills</h2>${skills.groups.flatMap((g: any) => Array.isArray(g?.skills) ? g.skills : []).map((s: string) => `<span class="chip">${escapeHtml(s)}</span>`).join('')}` : ''}
     </div>
-    ${summary ? `<h2>Summary</h2><p>${escapeHtml(summary)}</p>` : ''}
-    ${experience.length ? `<h2>Work Experience</h2><ul>${experience.map((i: any) => `<li>${escapeHtml(i?.text || '')}</li>`).join('')}</ul>` : ''}
-    ${projects.length ? `<h2>Projects</h2><ul>${projects.map((i: any) => `<li>${escapeHtml(i?.text || '')}</li>`).join('')}</ul>` : ''}
-    ${education.length ? `<h2>Education</h2><ul>${education.map((i: any) => `<li>${escapeHtml(i?.text || '')}</li>`).join('')}</ul>` : ''}
-    ${achievements.length ? `<h2>Achievements</h2><ul>${achievements.map((i: any) => `<li>${escapeHtml(i?.text || '')}</li>`).join('')}</ul>` : ''}
-    ${Array.isArray(skills.groups) && skills.groups.length ? `<h2>Skills</h2><ul>${skills.groups.map((g: any) => `<li>${escapeHtml(g?.name || '')}: ${escapeHtml(Array.isArray(g?.items) ? g.items.join(', ') : '')}</li>`).join('')}</ul>` : ''}
   </body>
 </html>`
   }
 
-  private skillsParas(skills: { groups: Array<{ name: string; items: string[] }> }) {
+  private skillsParas(skills: { groups: Array<{ name: string; skills: string[] }> }) {
     if (!skills || !Array.isArray(skills.groups) || !skills.groups.length) return []
     return [
       new Paragraph({ children: [new TextRun({ text: 'Skills', bold: true })] }),
-      ...skills.groups.map((g) => new Paragraph({ text: `${g?.name || ''}: ${(Array.isArray(g?.items) ? g.items.join(', ') : '')}` })),
+      ...skills.groups.map((g) => new Paragraph({ text: `${g?.name || ''}: ${(Array.isArray(g?.skills) ? g.skills.join(', ') : '')}` })),
     ]
   }
 }

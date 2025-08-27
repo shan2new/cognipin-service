@@ -179,7 +179,10 @@ export class ResumesController {
       res.setHeader('Content-Disposition', `attachment; filename="resume-${resume.id}.docx"`)
       return res.send(buf)
     } else {
-      const buf = await this.exporter.toPdf(resume)
+      // Pass through the user's bearer token to render the frontend print route for pixel-perfect export
+      const authHeader = (res.req.headers['authorization'] as string | undefined) || ''
+      const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : undefined
+      const buf = await this.exporter.toPdf(resume, token)
       res.setHeader('Content-Type', 'application/pdf')
       res.setHeader('Content-Disposition', `attachment; filename="resume-${resume.id}.pdf"`)
       return res.send(buf)
