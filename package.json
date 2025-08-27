@@ -35,7 +35,6 @@
     "class-validator": "^0.14.1",
     "docx": "^9.5.1",
     "openai": "^5.12.2",
-    "@openrouter/api": "^1.10.0",
     "pg": "^8.12.0",
     "puppeteer": "^24.17.0",
     "reflect-metadata": "^0.2.2",
