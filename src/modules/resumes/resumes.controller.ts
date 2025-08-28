@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, UseGuards, UploadedFile, UseInterceptors, Res, Query, Header, Logger } from '@nestjs/common'
+import { Controller, Get, Post, Put, Delete, Param, Body, UseGuards, UploadedFile, UseInterceptors, Res, Query, Header, Logger, Inject } from '@nestjs/common'
 import { ResumesService } from './resumes.service'
 // Import type only to avoid ts-node resolution issues in lint stage
 type Resume = any
@@ -22,6 +22,7 @@ export class ResumesController {
     private readonly profileSvc: ProfileService,
     private readonly redis: RedisService,
     private readonly parser: ResumesParseService,
+    @Inject('AI_PROVIDER') private readonly hybrid: any,
   ) {}
   private readonly logger = new Logger(ResumesController.name)
 
@@ -95,6 +96,29 @@ export class ResumesController {
     return this.ai.suggestBullets({ role: body?.role, jd: body?.jd, experience: (resume as any).sections })
   }
 
+  // AI rewrite/proofread for any small text (summary line, bullet, paragraph)
+  @Post(':id/ai/enhance-text')
+  async enhanceText(
+    @Param('id') id: string,
+    @CurrentUser() user: RequestUser,
+    @Body() body: { text: string; mode?: 'rewrite' | 'proofread'; contentType?: 'summary' | 'bullet' | 'paragraph'; tone?: 'professional' | 'confident' | 'friendly' | 'concise' }
+  ) {
+    const resume = await this.resumesService.findOne(id, user.userId)
+    if (!resume) throw new Error('Resume not found')
+    const text = typeof body?.text === 'string' ? body.text : ''
+    if (!text.trim()) return { text: '' }
+    const mode = (body?.mode === 'proofread' ? 'proofread' : 'rewrite') as 'rewrite' | 'proofread'
+    const result = await this.hybrid.enhanceResumeText({
+      text,
+      mode,
+      contentType: (body?.contentType || 'paragraph') as any,
+      tone: (body?.tone || (mode === 'rewrite' ? 'professional' : 'concise')) as any,
+      field: body?.contentType,
+      resume,
+    })
+    return result
+  }
+
   @Post(':id/ai/keywords')
   async extractKeywords(@Param('id') id: string, @CurrentUser() user: RequestUser, @Body() body: { jd: string }) {
     const resume = await this.resumesService.findOne(id, user.userId)
@@ -110,7 +134,9 @@ export class ResumesController {
     if (!profile) {
       try {
         profile = await this.profileSvc.get(user.userId)
-      } catch {}
+      } catch {
+        // ignore
+      }
     }
 
     const cacheKey = `resume_ai_seed:${user.userId}:v1`

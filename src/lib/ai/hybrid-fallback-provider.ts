@@ -100,6 +100,109 @@ export class HybridFallbackProvider implements AIProvider {
     };
   }
 
+  /**
+   * Lightweight helper for general chat completions via OpenRouter with an explicit model.
+   * Returns the first message content as plain text or an empty string on failure.
+   */
+  async completeWithModel(params: {
+    modelId: string;
+    messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>;
+    temperature?: number;
+    maxTokens?: number;
+  }): Promise<string> {
+    try {
+      const client = (this.openRouterProvider as any).client;
+      const response = await client.chat.completions.create({
+        model: params.modelId,
+        messages: params.messages,
+        temperature: typeof params.temperature === 'number' ? params.temperature : 0.2,
+        max_tokens: typeof params.maxTokens === 'number' ? params.maxTokens : 600,
+      });
+      return (response.choices?.[0]?.message?.content || '').trim();
+    } catch {
+      return '';
+    }
+  }
+
+  /**
+   * Enhance resume text with fast primary model and graceful fallback.
+   * mode: rewrite (more impactful) | proofread (grammar/clarity)
+   */
+  async enhanceResumeText(input: {
+    text: string;
+    mode: 'rewrite' | 'proofread';
+    contentType?: 'summary' | 'bullet' | 'paragraph' | 'role' | 'company' | 'achievement' | 'educationField';
+    tone?: 'professional' | 'confident' | 'friendly' | 'concise';
+    field?: string;
+    resume?: any;
+  }): Promise<{ text: string }> {
+    const contentType = input.contentType || 'paragraph';
+    const tone = input.tone || (input.mode === 'rewrite' ? 'professional' : 'concise');
+
+    const system = [
+      'You are an expert resume editor.',
+      'Follow rules strictly:',
+      '- Preserve facts; never invent or exaggerate.',
+      '- Keep numbers, names, dates exactly unless correcting obvious typos.',
+      '- Use active voice; short sentences; ATS-friendly wording.',
+      `- Tone: ${tone}.`,
+      contentType === 'bullet'
+        ? '- Output a single bullet line. Do not add leading symbols like • or -.'
+        : contentType === 'summary'
+          ? '- Output 1-3 sentences suitable for a resume summary.'
+          : contentType === 'role'
+            ? '- Output a role title only, concise and standardized.'
+            : '- Output a concise paragraph.'
+    ].join(' ');
+
+    const contextLines: string[] = [];
+    if (input.resume && typeof input.resume === 'object') {
+      try {
+        const ctx = JSON.stringify(input.resume).slice(0, 12000);
+        contextLines.push('Full resume JSON (truncated for context):');
+        contextLines.push(ctx);
+      } catch {}
+    }
+
+    const user = [
+      input.mode === 'rewrite'
+        ? 'Rewrite the text to be clearer and more impactful while preserving meaning.'
+        : 'Proofread and lightly edit the text for grammar, clarity, and brevity without changing meaning.',
+      'Return plain text only. No markdown, quotes, or commentary.',
+      input.field ? `Field: ${input.field}` : '',
+      contextLines.join('\n'),
+      '\n\nText:\n' + (input.text || '').slice(0, 6000),
+    ].join('\n');
+
+    // Try primary: ministral-3b fast model
+    const primaryModel = 'mistralai/ministral-3b';
+    const secondaryModel = (this.config.primaryModels?.[0]?.id) || 'meta-llama/llama-3.2-3b-instruct';
+
+    const first = await this.completeWithModel({
+      modelId: primaryModel,
+      messages: [ { role: 'system', content: system }, { role: 'user', content: user } ],
+      temperature: input.mode === 'rewrite' ? 0.35 : 0.1,
+      maxTokens: contentType === 'summary' ? 260 : 200,
+    });
+
+    let text = first && typeof first === 'string' ? first.trim() : '';
+    if (!text) {
+      const second = await this.completeWithModel({
+        modelId: secondaryModel,
+        messages: [ { role: 'system', content: system }, { role: 'user', content: user } ],
+        temperature: input.mode === 'rewrite' ? 0.3 : 0.1,
+        maxTokens: contentType === 'summary' ? 260 : 200,
+      });
+      text = second.trim();
+    }
+
+    // Sanitize: remove extraneous bullets/fences
+    text = text.replace(/^```[a-z]*\n?|\n?```$/gi, '').trim();
+    text = text.replace(/^[-•\s]+/, '').trim();
+
+    return { text };
+  }
+
   async suggestRoles(context: RoleSuggestionContext): Promise<RoleSuggestionResponse> {
     // For now, delegate to OpenRouter provider directly. In future, we can add
     // fallback logic with alternative models if needed.
