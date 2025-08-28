@@ -20,7 +20,9 @@
     "fetch:roles": "ts-node src/scripts/fetch-software-engineer-roles.ts",
     "fetch:tech-roles": "ts-node src/scripts/fetch-tech-roles.ts",
     "roles:clean": "ts-node src/scripts/clean-tech-roles.ts",
-    "roles:push": "ts-node src/scripts/push-roles.ts"
+    "roles:push": "ts-node src/scripts/push-roles.ts",
+    "cleanup:companies": "ts-node src/scripts/cleanup-company-names-and-logos.ts -- --yes",
+    "cleanup:companies:dry": "ts-node src/scripts/cleanup-company-names-and-logos.ts -- --dry-run"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.873.0",

@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { ConfigModule, ConfigService } from '@nestjs/config'
 import { Platform } from '../../schema/platform.entity'
+import { UserPlatform } from '../../schema/user-platform.entity'
 import { PlatformsController } from './platforms.controller'
 import { PlatformsService } from './platforms.service'
 import { PlatformSearchService } from '../../lib/ai/platform-search.service'
@@ -11,7 +12,7 @@ import { ClearbitLogoDownloader } from '../../lib/ai/logo-downloader'
 import { R2StorageService } from '../../lib/r2-storage.service'
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Platform]), ConfigModule],
+  imports: [TypeOrmModule.forFeature([Platform, UserPlatform]), ConfigModule],
   controllers: [PlatformsController],
   providers: [
     PlatformsService,

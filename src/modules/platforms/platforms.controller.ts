@@ -1,6 +1,7 @@
-import { Body, Controller, Get, Post, UseGuards, HttpException, HttpStatus } from '@nestjs/common'
+import { Body, Controller, Get, Post, UseGuards, HttpException, HttpStatus, Param, Delete, Put } from '@nestjs/common'
 import { ClerkGuard } from '../auth/clerk.guard'
 import { PlatformsService } from './platforms.service'
+import { CurrentUser, RequestUser } from '../auth/current-user.decorator'
 
 @UseGuards(ClerkGuard)
 @Controller('v1/platforms')
@@ -31,6 +32,27 @@ export class PlatformsController {
       }
       throw new HttpException(error?.message || 'Internal server error', HttpStatus.INTERNAL_SERVER_ERROR)
     }
+  }
+
+  // --- User-platform mappings ---
+  @Get('me')
+  async listMine(@CurrentUser() user: RequestUser) {
+    return this.svc.listUserPlatforms(user.userId)
+  }
+
+  @Post('me')
+  async addMine(@CurrentUser() user: RequestUser, @Body() body: { platform_id: string; rating?: number | null; notes?: string | null }) {
+    return this.svc.upsertUserPlatform(user.userId, body.platform_id, body.rating ?? null, body.notes ?? null)
+  }
+
+  @Put('me/:id')
+  async updateMine(@CurrentUser() user: RequestUser, @Param('id') id: string, @Body() body: { rating?: number | null; notes?: string | null }) {
+    return this.svc.updateUserPlatform(user.userId, id, body)
+  }
+
+  @Delete('me/:id')
+  async deleteMine(@CurrentUser() user: RequestUser, @Param('id') id: string) {
+    return this.svc.deleteUserPlatform(user.userId, id)
   }
 }
 

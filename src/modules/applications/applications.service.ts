@@ -17,6 +17,7 @@ import { StageObject } from '../../schema/application-stage.dto'
 import { computeCtc } from '../../lib/compensation'
 import { fetchMetadata } from '../../lib/metadata-fetcher'
 import { R2StorageService } from '../../lib/r2-storage.service'
+import { PlatformsService } from '../platforms/platforms.service'
 
 @Injectable()
 export class ApplicationsService {
@@ -31,6 +32,7 @@ export class ApplicationsService {
     @InjectRepository(Conversation) private readonly convoRepo: Repository<Conversation>,
     @InjectRepository(InterviewRound) private readonly interviewRepo: Repository<InterviewRound>,
     private readonly r2: R2StorageService,
+    private readonly platformsSvc: PlatformsService,
   ) {}
 
   private async formatStageAsObject(stage: ApplicationStage, applicationId: string): Promise<StageObject> {
@@ -194,6 +196,9 @@ export class ApplicationsService {
       last_activity_at: now,
     })
     const saved = await this.appRepo.save(app)
+    if (saved.platform_id) {
+      try { await this.platformsSvc.ensureUserPlatform(userId, saved.platform_id) } catch {}
+    }
     if (body.compensation) {
       const comp = this.compRepo.create({
         application_id: saved.id,
@@ -279,6 +284,9 @@ export class ApplicationsService {
     if (body.notes !== undefined) app.notes = body.notes
     if (body.resume_variant !== undefined) app.resume_variant = body.resume_variant
     const saved = await this.appRepo.save(app)
+    if (body.platform_id) {
+      try { await this.platformsSvc.ensureUserPlatform(userId, body.platform_id) } catch {}
+    }
 
     if (body.compensation) {
       let comp = await this.compRepo.findOne({ where: { application_id: id } })
