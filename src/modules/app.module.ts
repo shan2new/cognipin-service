@@ -19,6 +19,7 @@ import { ResumesModule } from './resumes/resumes.module'
 import ormConfig from '../ormconfig'
 import { AppController } from '../app.controller'
 import { RolesModule } from './roles/roles.module'
+import { MailModule } from './mail/mail.module'
 
 @Module({
   imports: [
@@ -27,7 +28,7 @@ import { RolesModule } from './roles/roles.module'
       inject: [ConfigService],
       useFactory: (): TypeOrmModuleOptions => {
         return {
-          ...(ormConfig as any),
+          ...(ormConfig as unknown as TypeOrmModuleOptions),
           autoLoadEntities: true,
         }
       },
@@ -48,6 +49,7 @@ import { RolesModule } from './roles/roles.module'
     ReferrersModule,
     ResumesModule,
     RolesModule,
+    MailModule,
   ],
   controllers: [AppController],
 })
