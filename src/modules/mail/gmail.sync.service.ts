@@ -91,7 +91,6 @@ export class GmailSyncService {
     let hasToken = false
     try {
       const clerk = createClerkClient({ secretKey: this.config.get<string>('CLERK_SECRET_KEY')! })
-      const user = await clerk.users.getUser(userId);
       const tokens = await clerk.users.getUserOauthAccessToken(userId, 'google') as { data?: Array<{ token?: string }> } | Array<{ token?: string }>
       const token = Array.isArray(tokens) ? tokens[0]?.token : tokens?.data?.[0]?.token
       if (token) {

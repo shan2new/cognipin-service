@@ -33,8 +33,6 @@ export class ClerkGuard implements CanActivate {
         // Allow small clock skew per Clerk recommendation (tokens rotate frequently)
         clockSkewInMs: 60_000,
       })
-
-      console.log('verified', verified.sub)
       req.user = { userId: verified.sub }
       return true
     } catch (err: any) {
