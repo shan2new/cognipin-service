@@ -47,6 +47,15 @@ export class MailMessage {
   @Column({ type: 'jsonb', nullable: true })
   label_ids!: string[] | null
 
+  @Column({ type: 'text', nullable: true })
+  mime_type!: string | null
+
+  @Column({ type: 'text', nullable: true })
+  snippet!: string | null
+
+  @Column({ type: 'text', nullable: true })
+  calendar_event_id!: string | null
+
   @Column({ type: 'boolean', default: false })
   has_attachments!: boolean
 

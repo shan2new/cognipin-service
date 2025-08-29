@@ -32,6 +32,22 @@ export class MailThread {
   @Column({ type: 'timestamptz' })
   latest_at!: Date
 
+  // Aggregated Gmail metadata for quick queries/filters
+  @Column({ type: 'jsonb', nullable: true })
+  label_ids!: string[] | null
+
+  @Column({ type: 'integer', default: 0 })
+  message_count!: number
+
+  @Column({ type: 'integer', default: 0 })
+  unread_count!: number
+
+  @Column({ type: 'text', nullable: true })
+  gmail_history_id!: string | null
+
+  @Column({ type: 'uuid', nullable: true })
+  last_message_id!: string | null
+
   @Column({ type: 'uuid', nullable: true })
   application_id!: string | null
 

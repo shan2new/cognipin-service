@@ -18,20 +18,24 @@ function base64UrlToString(data?: string | null): string | null {
   }
 }
 
-function textFromPayload(payload?: gmail_v1.Schema$MessagePart | null): { text?: string | null; html?: string | null; hasAttachments: boolean } {
+function textFromPayload(payload?: gmail_v1.Schema$MessagePart | null): { text?: string | null; html?: string | null; hasAttachments: boolean; hasCalendarPart: boolean; mime?: string | null } {
   let text: string | null | undefined
   let html: string | null | undefined
   let hasAttachments = false
+  let hasCalendarPart = false
+  let topMime: string | null = null
   const walk = (part?: gmail_v1.Schema$MessagePart | null) => {
     if (!part) return
     const mime = part.mimeType || ''
+    if (!topMime && mime) topMime = mime
     if (mime === 'text/plain' && !text) text = base64UrlToString(part.body?.data || null)
     if (mime === 'text/html' && !html) html = base64UrlToString(part.body?.data || null)
+    if (mime.includes('text/calendar') || mime.includes('application/ics')) hasCalendarPart = true
     if (part.filename) hasAttachments = hasAttachments || !!part.filename
     if (part.parts) part.parts.forEach(walk)
   }
   walk(payload || undefined)
-  return { text: text ?? null, html: html ?? null, hasAttachments }
+  return { text: text ?? null, html: html ?? null, hasAttachments, hasCalendarPart, mime: topMime }
 }
 
 function header(headers: gmail_v1.Schema$MessagePartHeader[] | undefined, name: string): string | undefined {
@@ -77,8 +81,7 @@ export class GmailSyncService {
   private oauthClient() {
     const clientId = this.config.get<string>('GOOGLE_CLIENT_ID')
     const clientSecret = this.config.get<string>('GOOGLE_CLIENT_SECRET')
-    const redirectUri = this.config.get<string>('GOOGLE_REDIRECT_URI')
-    return new google.auth.OAuth2(clientId, clientSecret, redirectUri)
+    return new google.auth.OAuth2(clientId, clientSecret)
   }
 
   async syncAccount(userId: string, accountId: string): Promise<{ importedThreads: number; importedMessages: number }> {
@@ -146,12 +149,14 @@ export class GmailSyncService {
       const msgs = thr.data.messages || []
       // Filter messages by job-related heuristics
       const filtered: gmail_v1.Schema$Message[] = []
+      const labelSet = new Set<string>()
       for (const m of msgs) {
         const headers = m.payload?.headers || []
         const mSubject = header(headers, 'Subject') || null
         const mFrom = header(headers, 'From') || null
         const mTo = header(headers, 'To') || null
         const parts = textFromPayload(m.payload || undefined)
+        for (const lid of m.labelIds || []) labelSet.add(lid)
         if (isJobRelated(mSubject, mFrom, mTo, parts.text || parts.html)) {
           filtered.push(m)
         }
@@ -172,6 +177,11 @@ export class GmailSyncService {
             preview_from: null,
             preview_to: null,
             latest_at: new Date(),
+            label_ids: null,
+            message_count: 0,
+            unread_count: 0,
+            gmail_history_id: null,
+            last_message_id: null,
             application_id: null,
             assigned_by: null,
             assigned_at: null,
@@ -180,6 +190,9 @@ export class GmailSyncService {
       }
 
       let latest = thread.latest_at
+      let lastSavedId: string | null = null
+      let unreadCount = 0
+      let messageCount = 0
       for (const m of filtered) {
         if (!m.id) continue
         const existing = await this.msgRepo.findOne({ where: { gmail_message_id: m.id } })
@@ -196,8 +209,9 @@ export class GmailSyncService {
 
         const parts = textFromPayload(m.payload || undefined)
         const direction: 'inbound' | 'outbound' = (m.labelIds || []).includes('SENT') ? 'outbound' : 'inbound'
+        if ((m.labelIds || []).includes('UNREAD')) unreadCount += 1
 
-        await this.msgRepo.save(
+        const saved = await this.msgRepo.save(
           this.msgRepo.create({
             thread_id: thread.id,
             gmail_message_id: m.id,
@@ -212,18 +226,31 @@ export class GmailSyncService {
             body_html: parts.html,
             label_ids: m.labelIds ? [...m.labelIds] : null,
             has_attachments: parts.hasAttachments,
+            mime_type: parts.mime || (m.payload?.mimeType || null),
+            snippet: m.snippet || null,
+            calendar_event_id: (header(headers, 'Sender') || '').toLowerCase().includes('calendar-notification') || parts.hasCalendarPart
+              ? header(headers, 'Message-ID') || null
+              : null,
             direction,
           })
         )
 
         if (msgDate > latest) latest = msgDate
+        lastSavedId = saved.id
+        messageCount += 1
         importedMessages += 1
       }
 
       // Update thread preview
-      thread.subject = thread.subject || header(msgs[msgs.length - 1]?.payload?.headers || [], 'Subject') || null
+      const lastMsg = msgs[msgs.length - 1]
+      thread.subject = thread.subject || header(lastMsg?.payload?.headers || [], 'Subject') || null
       thread.snippet = thr.data.snippet || thread.snippet
       thread.latest_at = latest
+      thread.label_ids = Array.from(labelSet)
+      thread.message_count = (thread.message_count || 0) + messageCount
+      thread.unread_count = (thread.unread_count || 0) + unreadCount
+      thread.gmail_history_id = thr.data.historyId || thread.gmail_history_id || null
+      thread.last_message_id = lastSavedId
       await this.threadRepo.save(thread)
       importedThreads += 1
     }
