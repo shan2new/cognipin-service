@@ -53,15 +53,16 @@ export class PlatformsService {
       .getMany()
 
     if (existing.length > 0) {
-      this.logger.log(`Found ${existing.length} existing platforms for query: "${query}". Proceeding with AI search to refresh logos.`)
+      this.logger.log(`Found ${existing.length} existing platforms for query: "${query}". Returning existing results.`)
+      return existing
     }
 
-    this.logger.log(`Searching with AI for "${query}" to ensure logos are refreshed...`)
+    this.logger.log(`No existing platforms found for "${query}". Searching with AI...`)
     const results = await this.platformSearchService.searchPlatforms(query)
     if (!results || results.length === 0) return []
 
     const saved = await Promise.all(results.map((r) => this.upsertFromSearchResult(r)))
-    this.logger.log(`Stored ${saved.length} platforms for query: "${query}"`)
+    this.logger.log(`Stored ${saved.length} new platforms for query: "${query}"`)
     return saved
   }
 
@@ -140,10 +141,10 @@ export class PlatformsService {
   async updateUserPlatform(userId: string, id: string, body: { rating?: number | null; notes?: string | null }) {
     const row = await this.userPlatformRepo.findOne({ where: { id, user_id: userId } })
     if (!row) throw new Error('Not found')
-    if (body.hasOwnProperty('rating')) {
+    if (Object.prototype.hasOwnProperty.call(body, 'rating')) {
       row.rating = typeof body.rating === 'number' ? Math.max(1, Math.min(5, Math.floor(body.rating))) : null
     }
-    if (body.hasOwnProperty('notes')) {
+    if (Object.prototype.hasOwnProperty.call(body, 'notes')) {
       row.notes = body.notes ?? null
     }
     const saved = await this.userPlatformRepo.save(row)

@@ -48,17 +48,32 @@ export class ApplicationDraftService {
     const draft = await this.getDraft(userId, id)
     if (!draft) return null
 
+    function deriveWebsiteFromJobUrl(u?: string | null): string | undefined {
+      if (!u) return undefined
+      try {
+        const url = new URL(String(u))
+        // Prefer origin; downstream fetchMetadata() will normalize to canonicalHost
+        return url.origin
+      } catch {
+        return undefined
+      }
+    }
+
     const body: any = {
-      company: draft.company_id ? { company_id: draft.company_id } : undefined,
-      role: draft.role || '',
+      company: draft.company_id
+        ? { company_id: draft.company_id }
+        : (deriveWebsiteFromJobUrl(draft.job_url) ? { website_url: deriveWebsiteFromJobUrl(draft.job_url) } : undefined),
+      role: (draft.role || '').slice(0, 180) || 'Opportunity',
       job_url: draft.job_url || null,
-      platform_id: draft.platform_id || null,
+      platform_id: typeof draft.platform_id === 'string' && /^[0-9a-fA-F-]{36}$/.test(draft.platform_id) ? draft.platform_id : null,
       source: draft.source || 'applied_self',
       compensation: draft.compensation || null,
       qa_snapshot: undefined,
     }
 
     const app = await this.apps.create(userId as any, body)
+    // If the draft had a platform_id that may be an invalid UUID string, ignore it after create
+    // (apps.create already guarded with repo lookup on update path; for POST we pass-through and DB handles nulls)
     // Persist simple recruiter contacts as application notes for now
     if (Array.isArray(draft.notes) && draft.notes.length) {
       // reuse app.createNote via service would require circular; instead store as notes endpoint caller handles

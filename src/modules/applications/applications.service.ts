@@ -131,6 +131,11 @@ export class ApplicationsService {
       return c
     }
     if (!companyInput.website_url) throw new BadRequestException('company.website_url or company_id required')
+    // Normalize to origin to avoid path fragments from job URLs
+    try {
+      const u = new URL(companyInput.website_url)
+      companyInput.website_url = `${u.protocol}//${u.hostname}`
+    } catch {}
     // Fetch metadata first so we can query by canonicalHost and keep logo/name fresh
     const meta = await fetchMetadata(companyInput.website_url)
     let c = await this.companyRepo.findOne({ where: { website_url: meta.canonicalHost } })
@@ -200,15 +205,32 @@ export class ApplicationsService {
       try { await this.platformsSvc.ensureUserPlatform(userId, saved.platform_id) } catch {}
     }
     if (body.compensation) {
+      const sanitize = (v?: any): string | null => {
+        if (v === undefined || v === null) return null
+        let n = typeof v === 'number' ? v : parseFloat(String(v).replace(/[^0-9.]/g, ''))
+        if (!isFinite(n)) return null
+        // Clamp to DECIMAL(6,2) max 9999.99; drop if out of range
+        if (n > 9999.99 || n < 0) return null
+        return n.toFixed(2)
+      }
       const comp = this.compRepo.create({
         application_id: saved.id,
-        fixed_min_lpa: body.compensation.fixed_min_lpa?.toString() ?? null,
-        fixed_max_lpa: body.compensation.fixed_max_lpa?.toString() ?? null,
-        var_min_lpa: body.compensation.var_min_lpa?.toString() ?? null,
-        var_max_lpa: body.compensation.var_max_lpa?.toString() ?? null,
+        fixed_min_lpa: sanitize(body.compensation.fixed_min_lpa),
+        fixed_max_lpa: sanitize(body.compensation.fixed_max_lpa),
+        var_min_lpa: sanitize(body.compensation.var_min_lpa),
+        var_max_lpa: sanitize(body.compensation.var_max_lpa),
         tentative_ctc_note: body.compensation.note ?? null,
       })
-      await this.compRepo.save(comp)
+      // Only persist if any numeric field or note is present
+      if (
+        comp.fixed_min_lpa !== null ||
+        comp.fixed_max_lpa !== null ||
+        comp.var_min_lpa !== null ||
+        comp.var_max_lpa !== null ||
+        comp.tentative_ctc_note !== null
+      ) {
+        await this.compRepo.save(comp)
+      }
     }
     // QA snapshot: copy from provided; if omitted, leave nulls (profile copy can be added later)
     const snap = this.qaRepo.create({

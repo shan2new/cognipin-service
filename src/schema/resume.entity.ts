@@ -41,6 +41,10 @@ export class Resume {
   @Column({ type: 'jsonb', default: () => `'[]'` })
   sections!: Array<any>
 
+  // Additional dynamic sections not covered by canonical fields
+  @Column({ type: 'jsonb', default: () => `'[]'` })
+  additional_section!: Array<any>
+
   @Column({ type: 'text', nullable: true })
   template_id!: string | null
 

@@ -57,6 +57,16 @@ export class ResumesService {
     }
 
     Object.assign(resume, data)
+    // Ensure unknown sections are stored in additional_section as JSON array
+    try {
+      const known = new Set(['summary', 'experience', 'education', 'skills', 'achievements', 'certifications'])
+      const sections = Array.isArray((resume as any).sections) ? (resume as any).sections : []
+      const additional = sections.filter((s: any) => !known.has(String(s?.type)))
+      if (Array.isArray(additional)) {
+        ;(resume as any).additional_section = additional
+        ;(resume as any).sections = sections.filter((s: any) => known.has(String(s?.type)))
+      }
+    } catch {}
     return this.resumeRepository.save(resume)
   }
 

@@ -5,6 +5,87 @@ import puppeteer from 'puppeteer'
 
 @Injectable()
 export class ResumesExportService {
+  private themeSpec(id?: string) {
+    const theme = String(id || '').toLowerCase()
+    const base = {
+      fontFamily: 'Inter, -apple-system, system-ui, Segoe UI, Roboto, Arial, sans-serif',
+      headingColor: '#111827',
+      bodyColor: '#374151',
+      mutedColor: '#6b7280',
+      divider: '#e5e7eb',
+      chipBg: '#f4f4f5',
+      chipBorder: '#e5e7eb',
+      chipText: '#6b7280',
+    }
+    const map: Record<string, Partial<typeof base>> = {
+      elegant: {
+        fontFamily: 'Georgia, ui-serif, serif',
+        headingColor: '#4338ca',
+        chipBg: '#eef2ff',
+        chipBorder: '#e0e7ff',
+        chipText: '#4338ca',
+      },
+      modern: {
+        headingColor: '#111827',
+      },
+      mono: {
+        fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+        headingColor: '#27272a',
+        bodyColor: '#27272a',
+        chipText: '#3f3f46',
+      },
+      serif: {
+        fontFamily: 'ui-serif, Georgia, Cambria, "Times New Roman", Times, serif',
+        headingColor: '#1c1917',
+        bodyColor: '#292524',
+      },
+      gradient: {
+        headingColor: '#7c3aed',
+        chipBg: '#fdf4ff',
+        chipBorder: '#fae8ff',
+        chipText: '#7c3aed',
+      },
+      slate: {
+        headingColor: '#1f2937',
+        bodyColor: '#334155',
+        chipBg: '#f1f5f9',
+        chipBorder: '#e2e8f0',
+        chipText: '#475569',
+      },
+      emerald: {
+        headingColor: '#047857',
+        chipBg: '#ecfdf5',
+        chipBorder: '#d1fae5',
+        chipText: '#065f46',
+      },
+      royal: {
+        headingColor: '#6d28d9',
+        chipBg: '#f5f3ff',
+        chipBorder: '#ede9fe',
+        chipText: '#5b21b6',
+      },
+      classic: {
+        bodyColor: '#111827',
+        chipBg: '#f9fafb',
+        chipBorder: '#e5e7eb',
+        chipText: '#374151',
+      },
+      minimal: {},
+    }
+    return { ...base, ...(map[theme] || {}) }
+  }
+
+  private themeCss(id?: string) {
+    const t = this.themeSpec(id)
+    return `
+      body { font-family: ${t.fontFamily}; color: ${t.bodyColor}; }
+      h1 { color: ${t.headingColor}; }
+      h2 { color: ${t.headingColor}; }
+      .muted { color: ${t.mutedColor}; }
+      .header { border-bottom: 1px solid ${t.divider}; }
+      .chip { background: ${t.chipBg}; border-color: ${t.chipBorder}; color: ${t.chipText}; }
+    `
+  }
   async toDocx(resume: Resume): Promise<Buffer> {
     const doc = new Document({
       sections: [
@@ -35,6 +116,8 @@ export class ResumesExportService {
       if (frontend && bearerToken) {
         const url = `${frontend.replace(/\/$/, '')}/p/resumes/${(resume as any).id}?token=${encodeURIComponent(bearerToken)}&auto=1`
         await page.goto(url, { waitUntil: 'networkidle0' })
+        // Inject theme overrides to match client theme id
+        await page.addStyleTag({ content: this.themeCss((resume as any)?.theme?.id) })
       } else {
         const html = this.renderHtml(resume as any)
         await page.setContent(html, { waitUntil: 'networkidle0' })
@@ -131,6 +214,19 @@ export class ResumesExportService {
     const achievements: Array<any> = resume?.sections?.find((s: any) => s.type === 'achievements')?.content || []
     const education: Array<any> = resume?.sections?.find((s: any) => s.type === 'education')?.content || []
     const skills: any = resume?.sections?.find((s: any) => s.type === 'skills')?.content || { groups: [] }
+    const certifications: Array<any> = resume?.sections?.find((s: any) => s.type === 'certifications')?.content || []
+    // Merge any additional_section typed as certifications to be safe
+    try {
+      const extraCerts = Array.isArray((resume as any).additional_section)
+        ? (resume as any).additional_section.filter((s: any) => s?.type === 'certifications').flatMap((s: any) => Array.isArray(s?.content) ? s.content : [])
+        : []
+      if (extraCerts.length) {
+        certifications.push(...extraCerts)
+      }
+    } catch (e) {
+      // ignore additional_section merge errors
+    }
+    const themeCss = this.themeCss(resume?.theme?.id)
     return `<!doctype html>
 <html>
   <head>
@@ -147,6 +243,7 @@ export class ResumesExportService {
       .header { border-bottom: 1px solid var(--border); padding-bottom: 16px; margin-bottom: 24px; text-align: center; }
       .chip { display: inline-block; padding: 2px 8px; font-size: 12px; border: 1px solid var(--border); background: var(--muted); color: var(--muted-foreground); border-radius: 6px; margin: 2px; }
       .container { width: 794px; min-height: 1123px; margin: 0 auto; padding: 64px; }
+      ${themeCss}
     </style>
   </head>
   <body>

@@ -15,6 +15,7 @@ type ResumeSeed = {
   summary?: string | null
   education?: Array<EducationItem>
   technologies?: Array<{ name: string; skills: string[] }>
+  additional_section?: Array<ResumeSection>
 }
 
 @Injectable()
@@ -51,6 +52,27 @@ export class ResumesParseService {
       const pi = (aiMapped as any)?.personal_info || {}
       const piUseful = Boolean((pi?.fullName && String(pi.fullName).trim()) || (pi?.email && String(pi.email).trim()))
       if (expItems.length > 0 || piUseful) {
+        // Augment AI results with Achievements/Leadership if missing by doing a lightweight text pass
+        let needsAugment = true
+        try {
+          const hasAchievements = aiSections.some((s: any) => s?.type === 'achievements' && Array.isArray((s as any).content) && (s as any).content.length)
+          const hasLeadership = aiSections.some((s: any) => s?.type === 'leadership' && Array.isArray((s as any).content) && (s as any).content.length)
+          if (!hasAchievements || !hasLeadership) {
+            const result = await pdf(buffer)
+            const rawText = String(result.text || '')
+            const text = this.normalizeWhitespace(rawText)
+            const lines = text.split(/\n+/).map((l) => l.trim()).filter(Boolean)
+            const sectionsMap = this.segmentByHeadings(lines)
+            const ach = hasAchievements ? [] : this.extractAchievements(sectionsMap)
+            const lead = hasLeadership ? [] : this.extractLeadership(sectionsMap)
+            if (ach.length) aiSections.push({ id: 'achievements', type: 'achievements', title: 'Achievements', order: aiSections.length, content: ach })
+            if (lead.length) aiSections.push({ id: 'leadership', type: 'leadership', title: 'Leadership', order: aiSections.length, content: lead })
+            ;(aiMapped as any).sections = aiSections
+          }
+          needsAugment = false
+        } catch {
+          // ignore augment failures
+        }
         return aiMapped as unknown as ResumeSeed
       }
       // else fall through to text extraction
@@ -73,22 +95,25 @@ export class ResumesParseService {
       const skills = this.extractSkills(sectionsMap)
       const education = this.extractEducation(sectionsMap)
       const experience = this.extractExperience(sectionsMap)
+      const achievements = this.extractAchievements(sectionsMap)
+      const leadership = this.extractLeadership(sectionsMap)
 
-      const sections: Array<ResumeSection> = this.composeSections(summaryText || '', experience, education, skills)
-      console.log('[ResumeParse] extracted summary_len=%d exp_items=%d edu_items=%d skills=%d', (summaryText || '').length, experience.length, education.length, skills.length)
+      const sections: Array<ResumeSection> = this.composeSections(summaryText || '', experience, education, skills, achievements, leadership)
+      console.log('[ResumeParse] extracted summary_len=%d exp=%d edu=%d skills=%d ach=%d lead=%d', (summaryText || '').length, experience.length, education.length, skills.length, achievements.length, leadership.length)
       return {
         personal_info: personal,
         sections,
         summary: summaryText,
         education,
         technologies: skills.length ? [{ name: '', skills }] : [],
+        additional_section: [],
       }
     } catch {
       return this.empty('PDF parse failed')
     }
   }
 
-  private composeSections(summaryText: string, experience: Array<ExperienceItem>, education: Array<EducationItem>, skills: string[]): Array<ResumeSection> {
+  private composeSections(summaryText: string, experience: Array<ExperienceItem>, education: Array<EducationItem>, skills: string[], achievements: Array<{ title?: string; description?: string; date?: string }>, leadership: Array<{ title?: string; description?: string; date?: string }>): Array<ResumeSection> {
     const sections: Array<ResumeSection> = []
     sections.push({ id: 'summary', type: 'summary', title: 'Professional Summary', order: 0, content: { text: summaryText || '' } })
     if (experience.length) {
@@ -99,6 +124,12 @@ export class ResumesParseService {
     }
     if (skills.length) {
       sections.push({ id: 'skills', type: 'skills', title: 'Skills', order: sections.length, content: { groups: [{ name: '', skills }] } })
+    }
+    if (achievements.length) {
+      sections.push({ id: 'achievements', type: 'achievements', title: 'Achievements', order: sections.length, content: achievements })
+    }
+    if (leadership.length) {
+      sections.push({ id: 'leadership', type: 'leadership', title: 'Leadership', order: sections.length, content: leadership })
     }
     if (sections.length === 1) {
       sections.push({ id: 'experience', type: 'experience', title: 'Experience', order: 1, content: [] })
@@ -162,7 +193,7 @@ export class ResumesParseService {
 
   private looksLikeHeading(s: string): boolean {
     const t = s.trim()
-    return /^(experience|work experience|professional experience|education|skills|technical skills|summary|profile|objective|projects|achievements|certifications)\b/i.test(t)
+    return /^(experience|work experience|professional experience|education|skills|technical skills|summary|profile|objective|projects|achievements|certifications|awards|honors|leadership|positions of responsibility|volunteer|volunteering)\b/i.test(t)
   }
 
   private segmentByHeadings(lines: string[]): Record<string, string[]> {
@@ -295,6 +326,42 @@ export class ResumesParseService {
     pushBlock()
     // Filter empty blocks
     return items.filter((it) => (it.company || it.role || (it.bullets && it.bullets.length))).slice(0, 6)
+  }
+
+  private extractAchievements(sections: Record<string, string[]>): Array<{ title?: string; description?: string; date?: string }> {
+    const src = sections['achievements'] || sections['awards'] || sections['honors'] || []
+    if (!src.length) return []
+    const items: Array<{ title?: string; description?: string; date?: string }> = []
+    for (const line of src) {
+      const l = String(line).replace(/^[-•\u2022]\s*/, '').trim()
+      if (!l) continue
+      const dateMatch = l.match(/(\b\d{4}\b|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[^,]*$/i)
+      const date = dateMatch ? dateMatch[0] : undefined
+      const title = date ? l.replace(date, '').replace(/[–—-]\s*$/, '').trim() : l
+      items.push({ title, date })
+    }
+    return items.slice(0, 10)
+  }
+
+  private extractLeadership(sections: Record<string, string[]>): Array<{ title?: string; description?: string; date?: string }> {
+    const src = sections['leadership'] || sections['positions of responsibility'] || sections['volunteer'] || sections['volunteering'] || []
+    if (!src.length) return []
+    const items: Array<{ title?: string; description?: string; date?: string }> = []
+    let buffer: string[] = []
+    const push = () => {
+      if (!buffer.length) return
+      const block = buffer.join(' ')
+      const dateMatch = block.match(/(\b\d{4}\b|Present|\b\w{3,}\.?,?\s?\d{4})/)
+      const date = dateMatch ? dateMatch[0] : undefined
+      items.push({ title: block.replace(String(date || ''), '').trim(), date })
+      buffer = []
+    }
+    for (const l of src) {
+      if (/^[-•\u2022]/.test(l) && buffer.length) push()
+      if (!/^[\s\W]*$/.test(l)) buffer.push(l.replace(/^[-•\u2022]\s*/, ''))
+    }
+    push()
+    return items.slice(0, 10)
   }
 }
 
