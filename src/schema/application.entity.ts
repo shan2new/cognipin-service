@@ -83,6 +83,16 @@ export class Application {
 
   @OneToOne(() => ApplicationCompensation, (compensation) => compensation.application)
   compensation?: ApplicationCompensation
+
+  // New optional fields populated during extraction
+  @Column({ type: 'text', nullable: true })
+  job_location_city?: string | null
+
+  @Column({ type: 'text', nullable: true })
+  job_location_country?: string | null
+
+  @Column({ type: 'text', nullable: true })
+  work_location_type?: 'onsite' | 'hybrid' | 'remote' | null
 }
 
 
