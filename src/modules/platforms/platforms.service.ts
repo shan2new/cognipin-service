@@ -44,7 +44,26 @@ export class PlatformsService {
   }
 
   async searchAndUpsert(query: string): Promise<Platform[]> {
-    // First try to find by name containing query for quick wins
+    // If the query looks like a URL or contains a domain, normalize to origin and upsert immediately
+    try {
+      const raw = query.trim()
+      if (raw.includes('.') || raw.startsWith('http')) {
+        const u = raw.includes('://') ? new URL(raw) : new URL(`https://${raw.replace(/^www\./, '')}`)
+        const origin = `${u.protocol}//${u.hostname}`
+        const name = u.hostname
+          .replace(/^www\./, '')
+          .split('.')
+          .slice(0, -1)
+          .join(' ')
+          .replace(/[-_]/g, ' ')
+          .replace(/\b\w/g, (m) => m.toUpperCase()) || u.hostname
+        const saved = await this.upsert(name, origin)
+        this.logger.log(`Normalized platform query "${query}" → ${origin} (${name})`)
+        return [saved]
+      }
+    } catch {}
+
+    // Otherwise, first try to find by name containing query for quick wins
     const existing = await this.repo
       .createQueryBuilder('p')
       .where('p.name ILIKE :q', { q: `%${query}%` })

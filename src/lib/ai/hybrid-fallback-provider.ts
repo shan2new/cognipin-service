@@ -63,7 +63,7 @@ export class HybridFallbackProvider implements AIProvider {
    */
   static readonly DEFAULT_CONFIG: HybridFallbackProviderConfig = {
     primaryModels: [
-      { id: 'mistralai/mistral-small-3.2-24b-instruct:free:nitro', name: 'Mistral-Small', temperature: 0.3, maxTokens: 3500, role: 'primary' }
+      { id: 'mistralai/ministral-3b:nitro', name: 'Mistral-3B', temperature: 0.3, maxTokens: 3500, role: 'primary' }
     ],
     secondaryModels: [
       { id: 'inception/mercury-coder:nitro', name: 'Mercury-Coder', temperature: 0.3, maxTokens: 3500, role: 'primary' },

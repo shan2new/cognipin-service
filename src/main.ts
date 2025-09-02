@@ -3,6 +3,7 @@ import { NestFactory } from '@nestjs/core'
 import { AppModule } from './modules/app.module'
 import { ValidationPipe } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
+import * as bodyParser from 'body-parser'
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule)
@@ -19,6 +20,9 @@ async function bootstrap() {
     allowedHeaders: ['Content-Type', 'Authorization'],
   })
   app.setGlobalPrefix('api')
+  // Increase JSON body limit for network logs from extension
+  app.use(bodyParser.json({ limit: '1mb' }))
+  app.use(bodyParser.urlencoded({ limit: '1mb', extended: true }))
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }))
 
   const port = Number(process.env.PORT || 8080)

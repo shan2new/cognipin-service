@@ -313,10 +313,21 @@ export class ApplicationsService {
     if (body.compensation) {
       let comp = await this.compRepo.findOne({ where: { application_id: id } })
       if (!comp) comp = this.compRepo.create({ application_id: id })
-      comp.fixed_min_lpa = body.compensation.fixed_min_lpa === undefined ? comp.fixed_min_lpa : body.compensation.fixed_min_lpa?.toString() ?? null
-      comp.fixed_max_lpa = body.compensation.fixed_max_lpa === undefined ? comp.fixed_max_lpa : body.compensation.fixed_max_lpa?.toString() ?? null
-      comp.var_min_lpa = body.compensation.var_min_lpa === undefined ? comp.var_min_lpa : body.compensation.var_min_lpa?.toString() ?? null
-      comp.var_max_lpa = body.compensation.var_max_lpa === undefined ? comp.var_max_lpa : body.compensation.var_max_lpa?.toString() ?? null
+      // Sanitize compensation values to prevent "Unknown" or invalid strings
+      const sanitize = (v?: any): string | null => {
+        if (v === undefined || v === null) return null
+        if (typeof v === 'string' && (v.toLowerCase() === 'unknown' || v.trim() === '')) return null
+        let n = typeof v === 'number' ? v : parseFloat(String(v).replace(/[^0-9.]/g, ''))
+        if (!isFinite(n)) return null
+        // Clamp to DECIMAL(6,2) max 9999.99; drop if out of range
+        if (n > 9999.99 || n < 0) return null
+        return n.toFixed(2)
+      }
+      
+      comp.fixed_min_lpa = body.compensation.fixed_min_lpa === undefined ? comp.fixed_min_lpa : sanitize(body.compensation.fixed_min_lpa)
+      comp.fixed_max_lpa = body.compensation.fixed_max_lpa === undefined ? comp.fixed_max_lpa : sanitize(body.compensation.fixed_max_lpa)
+      comp.var_min_lpa = body.compensation.var_min_lpa === undefined ? comp.var_min_lpa : sanitize(body.compensation.var_min_lpa)
+      comp.var_max_lpa = body.compensation.var_max_lpa === undefined ? comp.var_max_lpa : sanitize(body.compensation.var_max_lpa)
       comp.tentative_ctc_note = body.compensation.note === undefined ? comp.tentative_ctc_note : body.compensation.note ?? null
       await this.compRepo.save(comp)
     }

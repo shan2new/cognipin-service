@@ -281,6 +281,47 @@ export class ApplicationsController {
     return { draft_id: (draft as any).id }
   }
 
+  // AI: Extract from page network logs (fetch/xhr payloads)
+  @Post('ai/extract-from-network')
+  async extractFromNetwork(
+    @CurrentUser() user: RequestUser,
+    @Body() body: { entries: Array<any>; screenshot_data_url?: string } & { draft_id?: string }
+  ) {
+    const data = await this.ai.extractFromNetworkLogs(body?.entries || [], body?.screenshot_data_url)
+    const draft = body?.draft_id
+      ? await this.drafts.updateDraft(user.userId, body!.draft_id!, {})
+      : await this.drafts.createDraft(user.userId)
+
+    let companyId: string | null = null
+    try {
+      const website = (data.company_website_url || '').trim()
+      if (website) {
+        const c = await this.companies.upsertByWebsite(website)
+        companyId = (c as any).id
+      }
+    } catch {}
+
+    let platformId: string | null = null
+    try {
+      const hint = (data.platform_url || data.platform_name || data.job_url || '').toString()
+      if (hint) {
+        const platforms = await this.platforms.searchAndUpsert(hint)
+        platformId = platforms?.[0]?.id || null
+      }
+    } catch {}
+
+    await this.drafts.updateDraft(user.userId, (draft as any).id, {
+      company_id: companyId,
+      role: (data.role as any) ?? null,
+      job_url: (data.job_url as any) ?? null,
+      platform_id: platformId,
+      compensation: (data.compensation as any) ?? null,
+      notes: (data.notes as any) ?? [],
+    })
+
+    return { draft_id: (draft as any).id, ai: data }
+  }
+
   // Draft endpoints
   @Post('drafts')
   async createDraft(@CurrentUser() user: RequestUser) {

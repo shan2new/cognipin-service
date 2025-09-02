@@ -107,6 +107,48 @@ export class ApplicationsAiService {
     }
   }
 
+  /**
+   * Extract job details from an array of network entries (fetch/xhr request+response payloads)
+   */
+  async extractFromNetworkLogs(entries: Array<any>, screenshotDataUrl?: string): Promise<JDExtraction> {
+    const fallback: JDExtraction = { notes: [], compensation: null }
+    if (!this.client || !entries?.length) return fallback
+
+    const trimmedEntries = entries.slice(0, 50)
+    const sample = JSON.stringify(trimmedEntries).slice(0, 180000)
+    try {
+      const resp = await this.client.chat.completions.create({
+        model: 'meta-llama/llama-3.2-3b-instruct',
+        messages: [
+          { role: 'system', content: 'You extract job application fields from JSON API payloads. Output strict JSON only.' },
+          { role: 'user', content: [
+            { type: 'text', text: [
+              'You will receive a JSON array of network API entries captured from a job application page (ATS/board).',
+              'Each entry can contain: url, method, status, request.{headers,body_preview}, response.{headers,body}.',
+              'Return STRICT JSON with fields:',
+              '{ company_name?, company_website_url?, role?, job_url?, platform_name?, platform_url?, contacts?, compensation?, notes?, raw_text_excerpt? }',
+              'Rules:',
+              '- Prefer response bodies from JSON API calls (GraphQL/REST) that clearly state job details.',
+              '- If multiple entries conflict, choose the latest successful (2xx) response that looks most canonical.',
+              '- role should be clean; company_website_url should be employer website when present.',
+              '- platform_* refers to the hosting site (ATS/board), not the employer.',
+              '- Capture key points in notes (<=3). Output VALID JSON only without markdown fences.'
+            ].join('\n') },
+            { type: 'text', text: sample },
+            ...(screenshotDataUrl ? [{ type: 'image_url', image_url: { url: screenshotDataUrl } }] as any[] : [])
+          ] as any },
+        ],
+        temperature: 0,
+        max_tokens: 3000,
+      })
+      const raw = (resp.choices?.[0]?.message?.content || '').trim()
+      const json = this.strictJson<JDExtraction>(raw)
+      return json || fallback
+    } catch {
+      return fallback
+    }
+  }
+
   private strictJson<T>(s: string): T | null {
     let t = (s || '').trim()
     if (!t) return null

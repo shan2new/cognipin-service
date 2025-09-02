@@ -44,7 +44,7 @@ export class OpenRouterProvider implements AIProvider {
 
     try {
       const response = await this.client.chat.completions.create({
-        model: 'mistralai/mistral-small-3.2-24b-instruct:free:nitro',
+        model: 'mistralai/ministral-3b:nitro',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userContent }
@@ -116,7 +116,7 @@ export class OpenRouterProvider implements AIProvider {
 
     try {
       const response = await this.client.chat.completions.create({
-        model: 'moonshotai/kimi-k2:free',
+        model: 'mistralai/ministral-3b:nitro',
         messages: [
           { role: 'system', content: prompt },
           { role: 'user', content: query }

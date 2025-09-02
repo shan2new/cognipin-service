@@ -87,6 +87,37 @@ export class CompaniesService {
     return qb.getMany()
   }
 
+  private sanitizeNumeric(value: any): number | null {
+    if (value === undefined || value === null) return null
+    if (typeof value === 'string') {
+      if (value.toLowerCase() === 'unknown' || value.trim() === '') return null
+      const parsed = parseFloat(value.replace(/[^0-9.-]/g, ''))
+      return isFinite(parsed) ? parsed : null
+    }
+    if (typeof value === 'number') {
+      return isFinite(value) ? value : null
+    }
+    return null
+  }
+
+  private sanitizeBoolean(value: any): boolean | null {
+    if (value === undefined || value === null) return null
+    if (typeof value === 'string') {
+      const lower = value.toLowerCase().trim()
+      if (lower === 'unknown' || lower === '') return null
+      if (lower === 'true' || lower === 'yes' || lower === '1') return true
+      if (lower === 'false' || lower === 'no' || lower === '0') return false
+      return null
+    }
+    if (typeof value === 'boolean') {
+      return value
+    }
+    if (typeof value === 'number') {
+      return value === 1 ? true : value === 0 ? false : null
+    }
+    return null
+  }
+
   private async upsertFromSearchResult(result: CompanySearchResult & { logoBase64?: string | null }): Promise<Company> {
     try {
       // Try to find existing company by website URL (case insensitive)
@@ -118,12 +149,12 @@ export class CompaniesService {
           linkedin_url: result.linkedinUrl,
           crunchbase_url: result.crunchbaseUrl,
           traxcn_url: result.traxcnUrl,
-          funding_total_usd: result.fundingTotalUSD,
+          funding_total_usd: this.sanitizeNumeric(result.fundingTotalUSD),
           last_funding: result.lastFunding,
-          is_public: result.isPublic,
+          is_public: this.sanitizeBoolean(result.isPublic),
           ticker: result.ticker,
           sources: result.sources,
-          confidence: result.confidence,
+          confidence: this.sanitizeNumeric(result.confidence),
         });
         if (result.logoBase64) {
           try {
@@ -156,15 +187,22 @@ export class CompaniesService {
           company.crunchbase_url = result.crunchbaseUrl;
         if (result.traxcnUrl && result.traxcnUrl !== company.traxcn_url) 
           company.traxcn_url = result.traxcnUrl;
-        if (result.fundingTotalUSD !== undefined && result.fundingTotalUSD !== company.funding_total_usd) 
-          company.funding_total_usd = result.fundingTotalUSD;
+        // Sanitize numeric fields to prevent "Unknown" or invalid strings
+        if (result.fundingTotalUSD !== undefined && result.fundingTotalUSD !== company.funding_total_usd) {
+          const funding = this.sanitizeNumeric(result.fundingTotalUSD);
+          if (funding !== null) company.funding_total_usd = funding;
+        }
         if (result.lastFunding) company.last_funding = result.lastFunding;
-        if (result.isPublic !== undefined && result.isPublic !== company.is_public) 
-          company.is_public = result.isPublic;
+        if (result.isPublic !== undefined && result.isPublic !== company.is_public) {
+          const isPublic = this.sanitizeBoolean(result.isPublic);
+          if (isPublic !== null) company.is_public = isPublic;
+        }
         if (result.ticker && result.ticker !== company.ticker) company.ticker = result.ticker;
         if (result.sources) company.sources = result.sources;
-        if (result.confidence !== undefined && result.confidence !== company.confidence) 
-          company.confidence = result.confidence;
+        if (result.confidence !== undefined && result.confidence !== company.confidence) {
+          const confidence = this.sanitizeNumeric(result.confidence);
+          if (confidence !== null) company.confidence = confidence;
+        }
         if (result.logoBase64) {
             try {
             const host = (result.domain && result.domain.trim()) ? result.domain.trim() : new URL(result.websiteUrl).hostname

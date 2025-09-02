@@ -74,7 +74,7 @@ async function main(): Promise<void> {
 
 
   const response = await client.chat.completions.create({
-    model: "gpt-4o-mini-search-preview",
+    model: "meta-llama/llama-3.2-3b-instruct",
     messages: [
       { role: "system", content: prompt },
       { role: "user", content: query },
