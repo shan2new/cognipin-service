@@ -89,6 +89,9 @@ export class ApplicationsService {
     if (q.platform_id) {
       qb.andWhere('a.platform_id = :platform_id', { platform_id: q.platform_id })
     }
+    if (q.platform_job_id) {
+      qb.andWhere('a.platform_job_id = :platform_job_id', { platform_job_id: q.platform_job_id })
+    }
     if (q.stage) {
       qb.andWhere('a.stage = :stage', { stage: q.stage })
     }
@@ -173,6 +176,7 @@ export class ApplicationsService {
       role: string
       job_url?: string | null
       platform_id?: string | null
+      platform_job_id?: string | null
       source: string
       compensation?: { fixed_min_lpa?: number; fixed_max_lpa?: number; var_min_lpa?: number; var_max_lpa?: number; note?: string }
       qa_snapshot?: {
@@ -185,6 +189,11 @@ export class ApplicationsService {
     },
   ) {
     const company = await this.ensureCompany(body.company)
+    // If platform + platform_job_id provided, enforce idempotency by returning existing
+    if (body.platform_id && body.platform_job_id) {
+      const existing = await this.appRepo.findOne({ where: { user_id: userId, platform_id: body.platform_id, platform_job_id: body.platform_job_id } })
+      if (existing) return this.getById(userId, existing.id)
+    }
     const stage: ApplicationStage =
       body.source === 'applied_self' ? 'self_review' : body.source === 'applied_referral' ? 'self_review' : 'recruiter_reachout'
     const milestone = deriveMilestone(stage)
@@ -195,6 +204,7 @@ export class ApplicationsService {
       role: body.role,
       job_url: body.job_url ?? null,
       platform_id: body.platform_id ?? null,
+      platform_job_id: body.platform_job_id ?? null,
       source: body.source as any,
       stage,
       milestone,

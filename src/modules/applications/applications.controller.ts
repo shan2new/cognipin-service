@@ -41,6 +41,7 @@ export class ApplicationsController {
     @Query('stage') stage?: string,
     @Query('milestone') milestone?: string,
     @Query('platform_id') platform_id?: string,
+    @Query('platform_job_id') platform_job_id?: string,
     @Query('source') source?: string,
     @Query('status') status?: string,
     @Query('date_from') date_from?: string,
@@ -55,6 +56,7 @@ export class ApplicationsController {
       stage,
       milestone,
       platform_id,
+      platform_job_id,
       source,
       status,
       date_from,
@@ -75,6 +77,7 @@ export class ApplicationsController {
       role: string
       job_url: string
       platform_id?: string | null
+      platform_job_id?: string | null
       source: string
       compensation?: { fixed_min_lpa?: number; fixed_max_lpa?: number; var_min_lpa?: number; var_max_lpa?: number; note?: string }
       qa_snapshot?: {

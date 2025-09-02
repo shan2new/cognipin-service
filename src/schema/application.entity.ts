@@ -30,6 +30,7 @@ export type ApplicationStatus = 'active' | 'rejected' | 'offer' | 'accepted' | '
 @Index('idx_application_milestone', ['milestone'])
 @Index('idx_application_platform', ['platform_id'])
 @Index('idx_application_company', ['company_id'])
+@Index('uq_user_platform_job', ['user_id','platform_id','platform_job_id'], { unique: true })
 export class Application {
   @PrimaryGeneratedColumn('uuid')
   id!: string
@@ -56,6 +57,10 @@ export class Application {
   @ManyToOne(() => Platform)
   @JoinColumn({ name: 'platform_id' })
   platform?: Platform | null
+
+  // Unique per user + platform to prevent duplicates when sourced via platform pages
+  @Column({ type: 'text', nullable: true })
+  platform_job_id?: string | null
 
   @Column({ type: 'enum', enumName: 'application_source', enum: ['applied_self', 'applied_referral', 'recruiter_outreach'] })
   source!: ApplicationSource
