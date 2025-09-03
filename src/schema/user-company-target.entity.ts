@@ -4,6 +4,7 @@ import { CompanyGroup } from './company-group.entity'
 
 @Entity({ name: 'user_company_target' })
 @Index('uq_user_company_target', ['user_id', 'company_id'], { unique: true })
+@Index('idx_user_company_target_group', ['group_id', 'sort_order'])
 export class UserCompanyTarget {
   @PrimaryGeneratedColumn('uuid')
   id!: string
@@ -24,6 +25,9 @@ export class UserCompanyTarget {
   @ManyToOne(() => CompanyGroup, (g) => g.targets, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'group_id' })
   group?: CompanyGroup | null
+
+  @Column({ type: 'int', default: 0 })
+  sort_order!: number
 
   @CreateDateColumn({ type: 'timestamptz' })
   created_at!: Date

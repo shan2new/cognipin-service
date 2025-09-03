@@ -108,6 +108,28 @@ export class CompaniesService {
     return { success: true }
   }
 
+  async updateTargetGroup(userId: string, id: string, group_id: string | null) {
+    const row = await this.targetRepo.findOne({ where: { id } })
+    if (!row || row.user_id !== userId) throw new NotFoundException('Target not found')
+    row.group_id = group_id
+    return this.targetRepo.save(row)
+  }
+
+  async reorderTargets(userId: string, group_id: string, orderedIds: string[]) {
+    // Simple reorder: set sort_order according to provided array
+    const rows = await this.targetRepo.find({ where: { group_id } as any })
+    const byId = new Map(rows.map(r => [r.id, r]))
+    let order = 0
+    for (const id of orderedIds) {
+      const r = byId.get(id)
+      if (r && r.user_id === userId) {
+        r.sort_order = order++
+        await this.targetRepo.save(r)
+      }
+    }
+    return { success: true }
+  }
+
   async listGroups(userId: string) {
     return this.groupRepo.find({ where: { user_id: userId }, order: { sort_order: 'ASC', created_at: 'ASC' as any } })
   }

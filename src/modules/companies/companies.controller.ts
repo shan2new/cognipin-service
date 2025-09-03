@@ -123,6 +123,15 @@ export class MyCompaniesController {
     return this.svc.removeTarget(user.userId, id)
   }
 
+  @Put('targets/:id/group')
+  async updateTargetGroup(
+    @CurrentUser() user: RequestUser,
+    @Param('id') id: string,
+    @Body() body: { group_id?: string | null },
+  ) {
+    return this.svc.updateTargetGroup(user.userId, id, body?.group_id ?? null)
+  }
+
   @Get('groups')
   async listGroups(@CurrentUser() user: RequestUser) {
     return this.svc.listGroups(user.userId)
@@ -146,5 +155,14 @@ export class MyCompaniesController {
   @Delete('groups/:id')
   async deleteGroup(@CurrentUser() user: RequestUser, @Param('id') id: string) {
     return this.svc.deleteGroup(user.userId, id)
+  }
+
+  @Put('groups/:id/reorder')
+  async reorder(
+    @CurrentUser() user: RequestUser,
+    @Param('id') id: string,
+    @Body() body: { orderedIds: string[] },
+  ) {
+    return this.svc.reorderTargets(user.userId, id, body?.orderedIds || [])
   }
 }
