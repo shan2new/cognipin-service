@@ -2,7 +2,10 @@ import { Module } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { ConfigModule, ConfigService } from '@nestjs/config'
 import { Company } from '../../schema/company.entity'
+import { UserCompanyTarget } from '../../schema/user-company-target.entity'
+import { CompanyGroup } from '../../schema/company-group.entity'
 import { CompaniesController } from './companies.controller'
+import { MyCompaniesController } from './companies.controller'
 import { CompaniesService } from './companies.service'
 import { CompanySearchService } from '../../lib/ai/company-search.service'
 import { HybridFallbackProvider } from '../../lib/ai/hybrid-fallback-provider'
@@ -13,8 +16,8 @@ import { ProfileModule } from '../profile/profile.module'
 import { R2StorageService } from '../../lib/r2-storage.service'
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Company]), ConfigModule, ProfileModule],
-  controllers: [CompaniesController],
+  imports: [TypeOrmModule.forFeature([Company, UserCompanyTarget, CompanyGroup]), ConfigModule, ProfileModule],
+  controllers: [CompaniesController, MyCompaniesController],
   providers: [
     CompaniesService,
     CompanySearchService,

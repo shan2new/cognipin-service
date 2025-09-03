@@ -1,7 +1,9 @@
 import { Injectable, Logger, NotFoundException, Inject } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
-import { Repository } from 'typeorm'
+import { In, Repository } from 'typeorm'
 import { Company } from '../../schema/company.entity'
+import { UserCompanyTarget } from '../../schema/user-company-target.entity'
+import { CompanyGroup } from '../../schema/company-group.entity'
 import { fetchMetadata } from '../../lib/metadata-fetcher'
 import { CompanySearchService } from '../../lib/ai/company-search.service'
 import { CompanySearchResult, LogoDownloader } from '../../lib/ai/interfaces'
@@ -13,6 +15,8 @@ export class CompaniesService {
 
   constructor(
     @InjectRepository(Company) private readonly repo: Repository<Company>,
+    @InjectRepository(UserCompanyTarget) private readonly targetRepo: Repository<UserCompanyTarget>,
+    @InjectRepository(CompanyGroup) private readonly groupRepo: Repository<CompanyGroup>,
     private readonly companySearchService: CompanySearchService,
     private readonly r2: R2StorageService,
     @Inject('LOGO_DOWNLOADER') private readonly logoDownloader: LogoDownloader,
@@ -53,6 +57,85 @@ export class CompaniesService {
     const company = await this.repo.findOne({ where: { id } })
     if (!company) throw new NotFoundException('Company not found')
     return company
+  }
+
+  // === Targets & Groups (user scoped) ===
+  async listAllForUser(userId: string, search?: string) {
+    // All companies user has as targets plus companies present in user's applications
+    // First, list target company ids
+    const targets = await this.targetRepo.find({ where: { user_id: userId } })
+    const targetCompanyIds = targets.map((t) => t.company_id)
+    // Also find any companies from applications for this user
+    // Use raw query to avoid circular deps; we assume application table exists
+    const rows: Array<{ company_id: string }> = await (this.repo.manager.query(
+      `SELECT DISTINCT company_id FROM application WHERE user_id = $1`,
+      [userId],
+    ) as any)
+    const appCompanyIds = rows.map((r) => r.company_id)
+    const allIds = Array.from(new Set([...targetCompanyIds, ...appCompanyIds]).values())
+    if (allIds.length === 0) return []
+    const qb = this.repo.createQueryBuilder('c').where('c.id IN (:...ids)', { ids: allIds })
+    if (search) qb.andWhere('c.name ILIKE :q OR c.website_url ILIKE :q', { q: `%${search}%` })
+    qb.orderBy('c.updated_at', 'DESC')
+    return qb.getMany()
+  }
+
+  async listTargets(userId: string) {
+    const targets = await this.targetRepo.find({ where: { user_id: userId } })
+    const companyIds = targets.map((t) => t.company_id)
+    const companies = companyIds.length ? await this.repo.findBy({ id: In(companyIds) }) : []
+    const companyById = new Map(companies.map((c) => [c.id, c]))
+    return targets.map((t) => ({ ...t, company: companyById.get(t.company_id) }))
+  }
+
+  async addTarget(userId: string, company_id: string, group_id?: string | null) {
+    const existing = await this.targetRepo.findOne({ where: { user_id: userId, company_id } })
+    if (existing) {
+      if (group_id !== undefined) {
+        existing.group_id = group_id || null
+        return this.targetRepo.save(existing)
+      }
+      return existing
+    }
+    const target = this.targetRepo.create({ user_id: userId, company_id, group_id: group_id || null })
+    return this.targetRepo.save(target)
+  }
+
+  async removeTarget(userId: string, id: string) {
+    const row = await this.targetRepo.findOne({ where: { id } })
+    if (!row || row.user_id !== userId) throw new NotFoundException('Target not found')
+    await this.targetRepo.delete({ id })
+    return { success: true }
+  }
+
+  async listGroups(userId: string) {
+    return this.groupRepo.find({ where: { user_id: userId }, order: { sort_order: 'ASC', created_at: 'ASC' as any } })
+  }
+
+  async createGroup(userId: string, name: string, sort_order?: number) {
+    const g = this.groupRepo.create({ user_id: userId, name: name.trim(), sort_order: sort_order ?? 0 })
+    return this.groupRepo.save(g)
+  }
+
+  async updateGroup(userId: string, id: string, body: { name?: string; sort_order?: number }) {
+    const g = await this.groupRepo.findOne({ where: { id } })
+    if (!g || g.user_id !== userId) throw new NotFoundException('Group not found')
+    if (typeof body.name === 'string') g.name = body.name.trim()
+    if (typeof body.sort_order === 'number') g.sort_order = body.sort_order
+    return this.groupRepo.save(g)
+  }
+
+  async deleteGroup(userId: string, id: string) {
+    const g = await this.groupRepo.findOne({ where: { id } })
+    if (!g || g.user_id !== userId) throw new NotFoundException('Group not found')
+    // Null out group_id for all targets referencing this group
+    await this.targetRepo.createQueryBuilder()
+      .update(UserCompanyTarget)
+      .set({ group_id: null })
+      .where('group_id = :id', { id })
+      .execute()
+    await this.groupRepo.delete({ id })
+    return { success: true }
   }
 
   async searchAndUpsert(query: string): Promise<Company[]> {

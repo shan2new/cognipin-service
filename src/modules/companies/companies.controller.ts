@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Query, UseGuards, HttpException, HttpStatus } from '@nestjs/common'
+import { Body, Controller, Get, Param, Post, Query, UseGuards, HttpException, HttpStatus, Delete, Put } from '@nestjs/common'
 import { ClerkGuard } from '../auth/clerk.guard'
 import { CompaniesService } from './companies.service'
 import { RoleSuggestionService } from '../../lib/ai/role-suggestion.service'
@@ -97,3 +97,54 @@ export class CompaniesController {
 }
 
 
+@UseGuards(ClerkGuard)
+@Controller('v1/companies/me')
+export class MyCompaniesController {
+  constructor(private readonly svc: CompaniesService) {}
+
+  @Get('all')
+  async listAll(@CurrentUser() user: RequestUser, @Query('search') search?: string) {
+    return this.svc.listAllForUser(user.userId, search)
+  }
+
+  @Get('targets')
+  async listTargets(@CurrentUser() user: RequestUser) {
+    return this.svc.listTargets(user.userId)
+  }
+
+  @Post('targets')
+  async addTarget(@CurrentUser() user: RequestUser, @Body() body: { company_id: string; group_id?: string | null }) {
+    if (!body?.company_id) throw new HttpException('company_id required', HttpStatus.BAD_REQUEST)
+    return this.svc.addTarget(user.userId, body.company_id, body.group_id)
+  }
+
+  @Delete('targets/:id')
+  async removeTarget(@CurrentUser() user: RequestUser, @Param('id') id: string) {
+    return this.svc.removeTarget(user.userId, id)
+  }
+
+  @Get('groups')
+  async listGroups(@CurrentUser() user: RequestUser) {
+    return this.svc.listGroups(user.userId)
+  }
+
+  @Post('groups')
+  async createGroup(@CurrentUser() user: RequestUser, @Body() body: { name: string; sort_order?: number }) {
+    if (!body?.name || !body.name.trim()) throw new HttpException('name required', HttpStatus.BAD_REQUEST)
+    return this.svc.createGroup(user.userId, body.name, body.sort_order)
+  }
+
+  @Put('groups/:id')
+  async updateGroup(
+    @CurrentUser() user: RequestUser,
+    @Param('id') id: string,
+    @Body() body: { name?: string; sort_order?: number },
+  ) {
+    return this.svc.updateGroup(user.userId, id, body)
+  }
+
+  @Delete('groups/:id')
+  async deleteGroup(@CurrentUser() user: RequestUser, @Param('id') id: string) {
+    return this.svc.deleteGroup(user.userId, id)
+  }
+}
