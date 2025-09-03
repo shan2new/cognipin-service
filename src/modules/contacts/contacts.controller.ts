@@ -4,16 +4,17 @@ import { ContactsService } from './contacts.service'
 import { CurrentUser, RequestUser } from '../auth/current-user.decorator'
 
 @UseGuards(ClerkGuard)
-@Controller('v1/applications/:id/contacts')
+@Controller()
 export class ContactsController {
   constructor(private readonly svc: ContactsService) {}
 
-  @Get()
+  // Application-scoped contacts
+  @Get('v1/applications/:id/contacts')
   async list(@CurrentUser() _user: RequestUser, @Param('id') appId: string) {
     return this.svc.list(appId)
   }
 
-  @Post()
+  @Post('v1/applications/:id/contacts')
   async add(
     @CurrentUser() user: RequestUser,
     @Param('id') appId: string,
@@ -26,6 +27,57 @@ export class ContactsController {
     },
   ) {
     return this.svc.add(user.userId, appId, body)
+  }
+
+  // Aggregated contacts for the current user
+  @Get('v1/contacts')
+  async listAll(@CurrentUser() user: RequestUser) {
+    return this.svc.listAll(user.userId)
+  }
+
+  // Single contact (ensure user has access via their applications)
+  @Get('v1/contacts/:id')
+  async get(@CurrentUser() user: RequestUser, @Param('id') id: string) {
+    return this.svc.getForUser(user.userId, id)
+  }
+
+  // Update contact fields
+  @Post('v1/contacts/:id')
+  async update(
+    @CurrentUser() user: RequestUser,
+    @Param('id') id: string,
+    @Body() body: { name?: string; title?: string | null; notes?: string | null },
+  ) {
+    return this.svc.updateContact(user.userId, id, body)
+  }
+
+  // Manage contact channels
+  @Post('v1/contacts/:id/channels')
+  async addChannel(
+    @CurrentUser() user: RequestUser,
+    @Param('id') id: string,
+    @Body() body: { medium: 'email' | 'linkedin' | 'phone' | 'whatsapp' | 'other'; channel_value: string },
+  ) {
+    return this.svc.addChannel(user.userId, id, body)
+  }
+
+  @Post('v1/contacts/:id/channels/:channelId')
+  async updateChannel(
+    @CurrentUser() user: RequestUser,
+    @Param('id') id: string,
+    @Param('channelId') channelId: string,
+    @Body() body: { medium?: 'email' | 'linkedin' | 'phone' | 'whatsapp' | 'other'; channel_value?: string },
+  ) {
+    return this.svc.updateChannel(user.userId, id, channelId, body)
+  }
+
+  @Post('v1/contacts/:id/channels/:channelId/delete')
+  async deleteChannel(
+    @CurrentUser() user: RequestUser,
+    @Param('id') id: string,
+    @Param('channelId') channelId: string,
+  ) {
+    return this.svc.deleteChannel(user.userId, id, channelId)
   }
 }
 
