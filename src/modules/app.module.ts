@@ -20,6 +20,7 @@ import ormConfig from '../ormconfig'
 import { AppController } from '../app.controller'
 import { RolesModule } from './roles/roles.module'
 import { MailModule } from './mail/mail.module'
+import { AutofillModule } from './autofill/autofill.module'
 
 @Module({
   imports: [
@@ -50,6 +51,7 @@ import { MailModule } from './mail/mail.module'
     ResumesModule,
     RolesModule,
     MailModule,
+    AutofillModule,
   ],
   controllers: [AppController],
 })

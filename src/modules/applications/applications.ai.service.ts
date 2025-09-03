@@ -89,7 +89,7 @@ export class ApplicationsAiService {
     try {
       const resp = await this.client.chat.completions.create({
         // Use a low-cost, vision-capable or general model; OpenRouter will route if supported
-        model: 'google/gemma-3-4b-it',
+        model: 'google/gemma-3-4b-it:nitro',
         messages: [
           { role: 'system', content: 'You are a precise information extractor. Output strict JSON only.' },
           { role: 'user', content: userContent as any },
