@@ -76,6 +76,43 @@ export class ContactsService {
     return ac
   }
 
+  async create(
+    userId: string,
+    body: {
+      name: string
+      title?: string | null
+      notes?: string | null
+      channels?: { medium: ContactChannel['medium']; channel_value: string }[]
+      application_id?: string | null
+      role?: ApplicationContact['role'] | null
+    },
+  ) {
+    if (!body?.name || !body.name.trim()) throw new BadRequestException('name required')
+    // If application provided, ensure it belongs to user
+    let app: Application | null = null
+    if (body.application_id) {
+      app = await this.appRepo.findOne({ where: { id: body.application_id, user_id: userId } })
+      if (!app) throw new NotFoundException('Application not found')
+    }
+    const c = await this.contactRepo.save(
+      this.contactRepo.create({ name: body.name.trim(), title: body.title ?? null, notes: body.notes ?? null }),
+    )
+    if (Array.isArray(body.channels)) {
+      for (const ch of body.channels) {
+        if (!ch?.channel_value) continue
+        await this.channelRepo.save(
+          this.channelRepo.create({ contact_id: c.id, medium: ch.medium, channel_value: ch.channel_value }),
+        )
+      }
+    }
+    if (app && body.role) {
+      await this.appContactRepo.save(
+        this.appContactRepo.create({ application_id: app.id, contact_id: c.id, role: body.role, is_primary: false }),
+      )
+    }
+    return { id: c.id }
+  }
+
   /**
    * List all contacts associated with the current user's applications.
    * Aggregates roles, companies, channels, and platforms across applications.

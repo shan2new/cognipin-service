@@ -35,6 +35,23 @@ export class ContactsController {
     return this.svc.listAll(user.userId)
   }
 
+  // Create a new contact (optionally link to an application with a role)
+  @Post('v1/contacts')
+  async create(
+    @CurrentUser() user: RequestUser,
+    @Body()
+    body: {
+      name: string
+      title?: string | null
+      notes?: string | null
+      channels?: { medium: 'email' | 'linkedin' | 'phone' | 'whatsapp' | 'other'; channel_value: string }[]
+      application_id?: string | null
+      role?: 'recruiter' | 'referrer' | 'hiring_manager' | 'interviewer' | 'other' | null
+    },
+  ) {
+    return this.svc.create(user.userId, body)
+  }
+
   // Single contact (ensure user has access via their applications)
   @Get('v1/contacts/:id')
   async get(@CurrentUser() user: RequestUser, @Param('id') id: string) {
