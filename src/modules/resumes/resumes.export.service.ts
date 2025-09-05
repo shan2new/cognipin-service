@@ -114,8 +114,10 @@ export class ResumesExportService {
       const page = await browser.newPage()
       const frontend = process.env.FRONTEND_URL || process.env.APP_URL || process.env.WEB_URL
       if (frontend && bearerToken) {
-        const url = `${frontend.replace(/\/$/, '')}/p/resumes/${(resume as any).id}?token=${encodeURIComponent(bearerToken)}&auto=1`
+        const url = `${frontend.replace(/\/$/, '')}/p/resumes/${(resume as any).id}?token=${encodeURIComponent(bearerToken)}`
         await page.goto(url, { waitUntil: 'networkidle0' })
+        // Ensure fonts are loaded so the layout height is stable before printing
+        try { await page.evaluate(() => (document as any).fonts && (document as any).fonts.ready) } catch {}
         // Inject theme overrides to match client theme id
         await page.addStyleTag({ content: this.themeCss((resume as any)?.theme?.id) })
       } else {
@@ -131,6 +133,7 @@ export class ResumesExportService {
         format: 'A4',
         printBackground: true,
         preferCSSPageSize: true,
+        // Let @page margins control whitespace; keep Puppeteer margins zero
         margin: { top: '0', bottom: '0', left: '0', right: '0' },
       })
       return Buffer.from(pdf)
