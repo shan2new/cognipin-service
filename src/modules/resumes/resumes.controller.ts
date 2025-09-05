@@ -26,6 +26,10 @@ export class ResumesController {
   ) {}
   private readonly logger = new Logger(ResumesController.name)
 
+  private cacheKey(userId: string, resumeId: string) {
+    return `resume:${userId}:${resumeId}:v1`
+  }
+
   @Get()
   async findAll(@CurrentUser() user: RequestUser) {
     return this.resumesService.findAllByUser(user.userId)
@@ -33,10 +37,28 @@ export class ResumesController {
 
   @Get(':id')
   async findOne(@Param('id') id: string, @CurrentUser() user: RequestUser) {
+    // Try Redis cache first for speed
+    const key = this.cacheKey(user.userId, id)
+    try {
+      const cached = await this.redis.get(key)
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached)
+          // Warm the cache again to extend freshness (idempotent)
+          this.redis.set(key, JSON.stringify(parsed)).catch(() => {})
+          return parsed
+        } catch {}
+      }
+    } catch {}
+
+    // Fallback to DB and warm cache
     const resume = await this.resumesService.findOne(id, user.userId)
     if (!resume) {
       throw new Error('Resume not found')
     }
+    try {
+      await this.redis.set(key, JSON.stringify(resume))
+    } catch {}
     return resume
   }
 
@@ -47,11 +69,29 @@ export class ResumesController {
 
   @Put(':id')
   async update(@Param('id') id: string, @Body() data: Partial<Resume>, @CurrentUser() user: RequestUser) {
-    const resume = await this.resumesService.update(id, user.userId, data)
-    if (!resume) {
-      throw new Error('Resume not found')
+    // Immediate write to cache for fast UX
+    const key = this.cacheKey(user.userId, id)
+    const cachedPayload = { ...(data as any), id, user_id: user.userId }
+    try {
+      await this.redis.set(key, JSON.stringify(cachedPayload))
+    } catch (err) {
+      this.logger.warn('[ResumeUpdate] failed to set cache, proceeding', err as any)
     }
-    return resume
+
+    // Async write-back to DB without blocking response
+    setImmediate(async () => {
+      try {
+        const res = await this.resumesService.update(id, user.userId, data)
+        if (res) {
+          try { await this.redis.set(key, JSON.stringify(res)) } catch {}
+        }
+      } catch (err) {
+        this.logger.error('[ResumeUpdate] DB write-back failed', err as any)
+      }
+    })
+
+    // Return fast acknowledgement with the cached payload
+    return { success: true }
   }
 
   @Post(':id/duplicate')
@@ -103,8 +143,22 @@ export class ResumesController {
     @CurrentUser() user: RequestUser,
     @Body() body: { text: string; mode?: 'rewrite' | 'proofread'; contentType?: 'summary' | 'bullet' | 'paragraph'; tone?: 'professional' | 'confident' | 'friendly' | 'concise' }
   ) {
-    const resume = await this.resumesService.findOne(id, user.userId)
-    if (!resume) throw new Error('Resume not found')
+    // Use cached resume to avoid DB hit for speed
+    const key = this.cacheKey(user.userId, id)
+    let resume: any = null
+    try {
+      const cached = await this.redis.get(key)
+      if (cached) {
+        try { resume = JSON.parse(cached) } catch { resume = null }
+      }
+    } catch {}
+    if (!resume) {
+      const fromDb = await this.resumesService.findOne(id, user.userId)
+      if (!fromDb) throw new Error('Resume not found')
+      resume = fromDb
+      // Warm cache for subsequent fast calls
+      this.redis.set(key, JSON.stringify(fromDb)).catch(() => {})
+    }
     const text = typeof body?.text === 'string' ? body.text : ''
     if (!text.trim()) return { text: '' }
     const mode = (body?.mode === 'proofread' ? 'proofread' : 'rewrite') as 'rewrite' | 'proofread'
