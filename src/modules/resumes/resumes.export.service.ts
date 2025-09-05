@@ -125,8 +125,14 @@ export class ResumesExportService {
       // Force white background and remove visual canvas shadow to avoid dark borders
       await page.addStyleTag({ content: 'html,body,.document-viewer{background:#ffffff !important;} .resume-document{box-shadow:none !important;background:#ffffff !important;}' })
       await page.emulateMediaType('print')
+      // Use A4 with CSS-defined page size so long resumes paginate correctly
       await page.setViewport({ width: 794, height: 1123, deviceScaleFactor: 2 })
-      const pdf = await page.pdf({ width: '794px', height: '1123px', printBackground: true, margin: { top: '24px', bottom: '24px', left: '24px', right: '24px' } })
+      const pdf = await page.pdf({
+        format: 'A4',
+        printBackground: true,
+        preferCSSPageSize: true,
+        margin: { top: '0', bottom: '0', left: '0', right: '0' },
+      })
       return Buffer.from(pdf)
     } finally {
       await browser.close()
