@@ -100,6 +100,7 @@ export class ResumesExportService {
             ...this.educationSection(((resume as any).sections || []).find((s: any) => s.type === 'education')?.content || []),
             ...this.achievementsSection(((resume as any).sections || []).find((s: any) => s.type === 'achievements')?.content || []),
             ...this.skillsParas(((resume as any).sections || []).find((s: any) => s.type === 'skills')?.content || { groups: [] }),
+            ...this.projectsSection(((resume as any).sections || []).find((s: any) => s.type === 'projects')?.content || []),
           ],
         },
       ],
@@ -217,6 +218,26 @@ export class ResumesExportService {
     return out
   }
 
+  private projectsSection(items: Array<any>) {
+    if (!Array.isArray(items) || items.length === 0) return []
+    const out: Paragraph[] = []
+    out.push(new Paragraph({ children: [new TextRun({ text: 'Projects', bold: true })] }))
+    for (const item of items) {
+      const name = item?.name || ''
+      const url = item?.url || ''
+      const desc = item?.description || ''
+      const head = [name, url].filter(Boolean).join(' — ')
+      if (head) out.push(new Paragraph({ children: [new TextRun({ text: head, bold: true })] }))
+      if (desc) out.push(new Paragraph({ children: [new TextRun({ text: desc })] }))
+      const highlights: string[] = Array.isArray(item?.highlights) ? item.highlights : []
+      for (const h of highlights) {
+        if (!h) continue
+        out.push(new Paragraph({ text: `• ${h}` }))
+      }
+    }
+    return out
+  }
+
   private renderHtml(resume: any): string {
     const summary = resume?.sections?.find((s: any) => s.type === 'summary')?.content?.text || ''
     const experience: Array<any> = resume?.sections?.find((s: any) => s.type === 'experience')?.content || []
@@ -224,6 +245,7 @@ export class ResumesExportService {
     const education: Array<any> = resume?.sections?.find((s: any) => s.type === 'education')?.content || []
     const skills: any = resume?.sections?.find((s: any) => s.type === 'skills')?.content || { groups: [] }
     const certifications: Array<any> = resume?.sections?.find((s: any) => s.type === 'certifications')?.content || []
+    const projects: Array<any> = resume?.sections?.find((s: any) => s.type === 'projects')?.content || []
     // Merge any additional_section typed as certifications to be safe
     try {
       const extraCerts = Array.isArray((resume as any).additional_section)
@@ -279,6 +301,13 @@ export class ResumesExportService {
       ${achievements.length ? `<h2>Achievements</h2>${achievements.map((i: any) => {
         const head = [i?.title, i?.date].filter(Boolean).join(' — ')
         return `<p>${escapeHtml(head)}</p>` + (i?.description ? `<p>${escapeHtml(i.description)}</p>` : '')
+      }).join('')}` : ''}
+      ${projects.length ? `<h2>Projects</h2>${projects.map((i: any) => {
+        const head = [i?.name, i?.url].filter(Boolean).join(' — ')
+        const highlights = Array.isArray(i?.highlights) ? i.highlights : []
+        return `<p><strong>${escapeHtml(head)}</strong></p>`
+          + (i?.description ? `<p>${escapeHtml(i.description)}</p>` : '')
+          + (highlights.length ? `<ul>${highlights.map((h: string) => `<li>${escapeHtml(h)}</li>`).join('')}</ul>` : '')
       }).join('')}` : ''}
       ${Array.isArray(skills.groups) && skills.groups.length ? `<h2>Skills</h2>${skills.groups.flatMap((g: any) => Array.isArray(g?.skills) ? g.skills : []).map((s: string) => `<span class="chip">${escapeHtml(s)}</span>`).join('')}` : ''}
     </div>
