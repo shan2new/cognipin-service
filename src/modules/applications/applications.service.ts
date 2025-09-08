@@ -85,6 +85,12 @@ export class ApplicationsService {
     qb.leftJoinAndSelect('a.company', 'c')
     qb.leftJoinAndSelect('a.platform', 'p')
     qb.leftJoinAndSelect('a.compensation', 'comp')
+    // Archive filter: default to non-archived when unspecified
+    if (q.is_archived === 'true') {
+      qb.andWhere('a.is_archived IS TRUE')
+    } else {
+      qb.andWhere('a.is_archived IS DISTINCT FROM TRUE')
+    }
     // Basic filters (expand as needed)
     if (q.platform_id) {
       qb.andWhere('a.platform_id = :platform_id', { platform_id: q.platform_id })
@@ -289,6 +295,7 @@ export class ApplicationsService {
         reason_leaving_current_text?: string | null
         past_leaving_reasons_text?: string | null
       }
+      is_archived?: boolean | null
     }>,
   ) {
     // Load a clean entity (no relations) to avoid relation object overriding FK during save
@@ -315,6 +322,7 @@ export class ApplicationsService {
     if (body.stage !== undefined) app.stage = body.stage as any
     if (body.notes !== undefined) app.notes = body.notes
     if (body.resume_variant !== undefined) app.resume_variant = body.resume_variant
+    if (body.is_archived !== undefined) (app as any).is_archived = body.is_archived
     const saved = await this.appRepo.save(app)
     if (body.platform_id) {
       try { await this.platformsSvc.ensureUserPlatform(userId, body.platform_id) } catch {}
@@ -405,6 +413,62 @@ export class ApplicationsService {
     await this.appRepo.delete({ id, user_id: userId })
   }
   
+  async bulkUpdate(userId: string, body: { ids: Array<string>; action: 'archive' | 'unarchive' | 'delete' | 'update'; data?: any }) {
+    const ids = Array.isArray(body.ids) ? body.ids.filter((x) => typeof x === 'string') : []
+    if (!ids.length) return { updated: 0, deleted: 0 }
+    let updated = 0
+    let deleted = 0
+    if (body.action === 'delete') {
+      // Ensure ownership, then cascade delete child tables like single delete
+      const apps = await this.appRepo.find({ where: { user_id: userId, id: (ids as any) } })
+      const appIds = apps.map((a) => a.id)
+      if (appIds.length) {
+        await Promise.all([
+          this.compRepo.delete(appIds.map((id) => ({ application_id: id }))),
+          this.qaRepo.delete(appIds.map((id) => ({ application_id: id }))),
+          this.historyRepo.delete(appIds.map((id) => ({ application_id: id }))),
+          this.appContactRepo.delete(appIds.map((id) => ({ application_id: id }))),
+          this.convoRepo.delete(appIds.map((id) => ({ application_id: id }))),
+          this.interviewRepo.delete(appIds.map((id) => ({ application_id: id }))),
+          this.noteRepo.delete(appIds.map((id) => ({ application_id: id }))),
+        ])
+        const res = await this.appRepo.delete(appIds.map((id) => ({ id, user_id: userId })))
+        deleted = res.affected || 0
+      }
+      return { updated, deleted }
+    }
+    if (body.action === 'archive' || body.action === 'unarchive') {
+      const is_archived = body.action === 'archive'
+      const res = await this.appRepo
+        .createQueryBuilder()
+        .update(Application)
+        .set({ is_archived: is_archived as any })
+        .where('user_id = :userId', { userId })
+        .andWhere('id IN (:...ids)', { ids })
+        .execute()
+      updated = res.affected || 0
+      return { updated, deleted }
+    }
+    if (body.action === 'update') {
+      // Shallow partial update for future flexibility
+      const payload = { ...(body.data || {}) }
+      // Validate disallowed fields
+      delete (payload as any).user_id
+      delete (payload as any).id
+      if (Object.keys(payload).length === 0) return { updated, deleted }
+      const res = await this.appRepo
+        .createQueryBuilder()
+        .update(Application)
+        .set(payload as any)
+        .where('user_id = :userId', { userId })
+        .andWhere('id IN (:...ids)', { ids })
+        .execute()
+      updated = res.affected || 0
+      return { updated, deleted }
+    }
+    return { updated, deleted }
+  }
+
   // Application Notes methods
   async createNote(userId: string, applicationId: string, content: string) {
     // Verify the application exists and belongs to the user

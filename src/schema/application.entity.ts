@@ -98,6 +98,10 @@ export class Application {
 
   @Column({ type: 'text', nullable: true })
   work_location_type?: 'onsite' | 'hybrid' | 'remote' | null
+
+  // Soft archive flag: when true, application is hidden from default lists
+  @Column({ type: 'boolean', nullable: true })
+  is_archived?: boolean | null
 }
 
 

@@ -50,6 +50,7 @@ export class ApplicationsController {
     @Query('ctc_max_lpa') ctc_max_lpa?: string,
     @Query('var_pct_lte') var_pct_lte?: string,
     @Query('time_in_stage_gt') time_in_stage_gt?: string,
+    @Query('is_archived') is_archived?: string,
   ) {
     return this.svc.list(user.userId, {
       search,
@@ -65,6 +66,7 @@ export class ApplicationsController {
       ctc_max_lpa,
       var_pct_lte,
       time_in_stage_gt,
+      is_archived,
     })
   }
 
@@ -120,6 +122,7 @@ export class ApplicationsController {
         reason_leaving_current_text?: string | null
         past_leaving_reasons_text?: string | null
       }
+      is_archived?: boolean | null
     }>,
   ) {
     return this.svc.update(user.userId, id, body)
@@ -132,6 +135,19 @@ export class ApplicationsController {
     @Body() body: { to_stage: ApplicationStage; reason?: string; admin_override?: boolean },
   ) {
     return this.svc.transition(user.userId, id, body)
+  }
+
+  @Post('bulk')
+  async bulkUpdate(
+    @CurrentUser() user: RequestUser,
+    @Body()
+    body: {
+      ids: Array<string>
+      action: 'archive' | 'unarchive' | 'delete' | 'update'
+      data?: any
+    },
+  ) {
+    return this.svc.bulkUpdate(user.userId, body)
   }
 
   @Get(':id/stage-history')
