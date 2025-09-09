@@ -57,6 +57,7 @@ export class HybridFallbackProvider implements AIProvider {
   private openRouterProvider: OpenRouterProvider;
   private tavilyProvider: TavilyProvider;
   private config: HybridFallbackProviderConfig;
+  private openRouterHeaders: Record<string,string>;
 
   /**
    * Default model configuration with recommended models and settings
@@ -90,6 +91,11 @@ export class HybridFallbackProvider implements AIProvider {
   ) {
     this.openRouterProvider = new OpenRouterProvider(openRouterApiKey);
     this.tavilyProvider = new TavilyProvider(tavilyApiKey);
+    this.openRouterHeaders = {
+      'Authorization': `Bearer ${openRouterApiKey}`,
+      'HTTP-Referer': 'https://cognipin.com',
+      'X-Title': 'Huntier Resume AI',
+    };
     
     // Merge provided config with defaults
     this.config = {
@@ -111,14 +117,19 @@ export class HybridFallbackProvider implements AIProvider {
     maxTokens?: number;
   }): Promise<string> {
     try {
-      const client = (this.openRouterProvider as any).client;
-      const response = await client.chat.completions.create({
-        model: params.modelId,
-        messages: params.messages,
-        temperature: typeof params.temperature === 'number' ? params.temperature : 0.2,
-        max_tokens: typeof params.maxTokens === 'number' ? params.maxTokens : 600,
-      });
-      return (response.choices?.[0]?.message?.content || '').trim();
+      // Call OpenRouter directly to align with LangGraph cloud agents
+      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', ...this.openRouterHeaders },
+        body: JSON.stringify({
+          model: params.modelId,
+          messages: params.messages,
+          temperature: typeof params.temperature === 'number' ? params.temperature : 0.2,
+          max_tokens: typeof params.maxTokens === 'number' ? params.maxTokens : 600,
+        }),
+      } as any)
+      const json: any = await response.json()
+      return ((json?.choices?.[0]?.message?.content) || '').trim();
     } catch {
       return '';
     }

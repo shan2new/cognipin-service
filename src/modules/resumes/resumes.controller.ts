@@ -7,7 +7,7 @@ import { ResumesExportService } from './resumes.export.service'
 import { ResumesParseService } from './resumes.parse.service'
 import { ProfileService } from '../profile/profile.service'
 import type { Response } from 'express'
-import { FileInterceptor } from '@nestjs/platform-express'
+import { FileFieldsInterceptor, FileInterceptor } from '@nestjs/platform-express'
 import { ClerkGuard } from '../auth/clerk.guard'
 import { CurrentUser, RequestUser } from '../auth/current-user.decorator'
 import { RedisService } from '../../lib/redis.service'
@@ -178,6 +178,42 @@ export class ResumesController {
     const resume = await this.resumesService.findOne(id, user.userId)
     if (!resume) throw new Error('Resume not found')
     return this.ai.extractKeywords({ jd: body?.jd, resume })
+  }
+
+  // Analyze JD for alignment and suggestions. Accept JSON or multipart with files
+  @Post(':id/ai/analyze-jd')
+  @UseInterceptors(FileFieldsInterceptor([
+    { name: 'files', maxCount: 6 },
+  ]))
+  async analyzeJd(
+    @Param('id') id: string,
+    @CurrentUser() user: RequestUser,
+    @Body() body: { jdText?: string; jdUrl?: string },
+    @UploadedFile() _unused?: any,
+  ) {
+    const resume = await this.resumesService.findOne(id, user.userId)
+    if (!resume) throw new Error('Resume not found')
+    const jd = (body?.jdText || '').trim()
+    const url = (body?.jdUrl || '').trim()
+    try {
+      const result = await this.hybrid.enhanceResumeText({
+        text: [
+          'Provide a concise analysis for resume vs JD alignment. Return bullet points only.',
+          'Identify: missing keywords, skill alignment, rewrite opportunities (summary/bullets), ATS issues, role level fit, and suggested section reorder.',
+          `JD URL: ${url || 'n/a'}`,
+          `JD Text: ${(jd || '').slice(0, 4000)}`,
+          `Resume JSON: ${(JSON.stringify(resume) || '').slice(0, 12000)}`,
+        ].join('\n'),
+        mode: 'proofread',
+        contentType: 'paragraph',
+        tone: 'concise',
+      })
+      const lines = (result?.text || '').split(/\n+/).map((s: string) => s.replace(/^[-•\s]+/, '').trim()).filter(Boolean)
+      const items = lines.slice(0, 24).map((msg: string) => ({ section: 'summary', type: 'rewrite', message: msg }))
+      return { items }
+    } catch {
+      return { items: [] }
+    }
   }
 
   // Generate a default resume strictly in schema from the user's profile

@@ -21,6 +21,7 @@ import { AppController } from '../app.controller'
 import { RolesModule } from './roles/roles.module'
 import { MailModule } from './mail/mail.module'
 import { AutofillModule } from './autofill/autofill.module'
+import { CopilotModule } from './copilot/copilot.module'
 
 @Module({
   imports: [
@@ -52,6 +53,7 @@ import { AutofillModule } from './autofill/autofill.module'
     RolesModule,
     MailModule,
     AutofillModule,
+    CopilotModule,
   ],
   controllers: [AppController],
 })

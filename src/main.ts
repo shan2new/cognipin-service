@@ -17,7 +17,16 @@ async function bootstrap() {
     origin: corsOrigins.length > 0 ? corsOrigins : '*',
     credentials: config.get<string>('CORS_CREDENTIALS') === 'true',
     methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    // Allow CopilotKit runtime client headers and any X-Custom-* auth headers
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'X-CopilotKit-Runtime-Client-Gql-Version',
+      'X-CopilotKit-Public-Api-Key',
+      'X-Custom-Authorization',
+      'X-Custom-Auth',
+      'X-Custom-User',
+    ],
   })
   app.setGlobalPrefix('api')
   // Increase JSON body limit for network logs from extension
