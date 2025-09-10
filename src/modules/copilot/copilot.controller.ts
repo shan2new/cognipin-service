@@ -1,9 +1,11 @@
-import { Controller, Post, Req, Res } from '@nestjs/common'
+import { Controller, Post, Req, Res, UseGuards } from '@nestjs/common'
 import type { Request, Response } from 'express'
 import { ConfigService } from '@nestjs/config'
 import { CopilotRuntime, copilotRuntimeNestEndpoint, LangGraphHttpAgent, OpenAIAdapter } from '@copilotkit/runtime'
+import { ClerkGuard } from '../auth/clerk.guard'
 
 @Controller('copilotkit')
+@UseGuards(ClerkGuard)
 export class CopilotController {
   constructor(private readonly config: ConfigService) {}
   @Post('chat')

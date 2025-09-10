@@ -279,7 +279,7 @@ export class ResumesController {
     this.logger.log(`[ImportPDF] start file=${name} size=${size ?? 'n/a'}`)
     const data = await this.parser.parsePdf(file)
     // After parsing, ensure sections are ordered and classify into known vs unknown
-    const knownTypes = new Set(['summary', 'experience', 'education', 'skills', 'achievements', 'certifications', 'leadership'])
+    const knownTypes = new Set(['summary', 'experience', 'education', 'skills', 'achievements', 'projects', 'certifications', 'leadership'])
     const sections = (Array.isArray((data as any)?.sections) ? (data as any).sections : []).map((s: any, idx: number) => ({ ...s, order: typeof s?.order === 'number' ? s.order : idx }))
     const ordered = [...sections].sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
     const additional = ordered.filter((s: any) => !knownTypes.has(String(s?.type)))
