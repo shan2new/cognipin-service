@@ -258,6 +258,19 @@ export class ResumesExportService {
       // ignore additional_section merge errors
     }
     const themeCss = this.themeCss(resume?.theme?.id)
+    const fontFamily = (resume?.theme?.font && typeof resume.theme.font === 'string') ? String(resume.theme.font) : ''
+    const fontMap: Record<string, string> = {
+      outfit: 'Outfit, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial',
+      inter: 'Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial',
+      ebgaramond: '"EB Garamond", ui-serif, Georgia, Cambria, "Times New Roman", Times, serif',
+      georgia: 'Georgia, ui-serif, serif',
+      palatino: 'Palatino, "Palatino Linotype", "Book Antiqua", ui-serif, serif',
+      times: '"Times New Roman", Times, ui-serif, serif',
+      plexSans: '"IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial',
+      merriweather: 'Merriweather, ui-serif, Georgia, Cambria, "Times New Roman", Times, serif',
+      mono: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+      geistMono: '"Geist Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+    }
     return `<!doctype html>
 <html>
   <head>
@@ -265,7 +278,7 @@ export class ResumesExportService {
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <style>
       :root { --foreground: #111827; --muted: #f4f4f5; --muted-foreground: #6b7280; --border: #e5e7eb; }
-      body { font-family: Inter, -apple-system, system-ui, Segoe UI, Roboto, Arial, sans-serif; color: var(--foreground); background: white; }
+      body { font-family: ${fontMap[fontFamily] || 'Inter, -apple-system, system-ui, Segoe UI, Roboto, Arial, sans-serif'}; color: var(--foreground); background: white; }
       h1 { font-size: 30px; margin: 0 0 12px; font-weight: 700; }
       h2 { font-size: 12px; margin: 16px 0 6px; text-transform: uppercase; letter-spacing: 0.12em; font-weight: 600; }
       p, li { font-size: 14px; line-height: 1.7; color: #374151; }
