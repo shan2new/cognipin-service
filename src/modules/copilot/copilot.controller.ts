@@ -15,15 +15,37 @@ export class CopilotController {
       }
       const runtime = new CopilotRuntime({
         agents: {
-          'sample_agent': new LangGraphHttpAgent({url: "http://localhost:8000/chat"}),
+          'sample_agent': new LangGraphHttpAgent({ url: runtimeUrl }),
         },
       });
-      const handler = copilotRuntimeNestEndpoint({
-        runtime,
-        serviceAdapter: new OpenAIAdapter(),
-        endpoint: '/chat',
-      });
-      return handler(req, res);
+      // If assistant-ui hits this endpoint directly with { messages, temperature },
+      // proxy to LangGraph runtime and return { content } shape
+      try {
+        const body: any = req.body || {}
+        if (Array.isArray(body.messages)) {
+          const response = await fetch(runtimeUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ messages: body.messages, temperature: body.temperature ?? 0.3 }),
+          } as any)
+          const text = await response.text()
+          console.log('text', text)
+          if (!response.ok) {
+            return res.status(response.status).send(text || `LangGraph ${response.status}`)
+          }
+          try {
+            const data = JSON.parse(text)
+            console.log('data', data)
+            return res.json({ content: data?.content || '' })
+          } catch {
+            return res.json({ content: text || '' })
+          }
+        }
+      } catch {}
+
+      // Otherwise fall back to CopilotKit runtime handler
+      const handler = copilotRuntimeNestEndpoint({ runtime, serviceAdapter: new OpenAIAdapter(), endpoint: '/chat' })
+      return handler(req, res)
     } catch (e) {
       res.status(500).json({ error: 'Copilot chat proxy failed' })
     }
